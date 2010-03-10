@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-eqiv='content-type' content='text/html;charset=utf-8'>
+    <title>shocco.sh</title>
+    <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
+</head>
+<body>
+<div id=container>
+    <div id=background></div>
+    <table cellspacing=0 cellpadding=0>
+    <thead>
+      <tr>
+        <th class=docs><h1>shocco.sh</h1></th>
+        <th class=code></th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr style=display:none><td><div><pre>
+</pre></div></td></tr><tr><td class=docs>
+
+<p><strong>shocco</strong> is a quick-and-dirty, hundred-line-long, literate-programming-style
+documentation generator written for and in <strong>POSIX shell</strong>.</p>
+
+<p>shocco reads shell scripts and produces annotated source documentation
+in HTML format. Comments are formatted with Markdown and presented
+alongside syntax highlighted code so as to give an annotation effect. This
+page is the result of running shocco against its own source file.</p>
+
+<p>shocco can be installed with <code>make(1)</code>:</p>
+
+<pre><code>git clone git://github.com/rtomayko/schocco.git
+(cd schocco &amp;&amp; make &amp;&amp; make install)
+</code></pre>
+
+<p>Once installed, the <code>shocco</code> program can be used to generate documentation
+for a shell script:</p>
+
+<pre><code>shocco shocco.sh
+</code></pre>
+
+<p>The HTML files are written to the current working directory.</p>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>Setup</h2>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>The most important line in any shell program.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="nb">set</span> -e
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>There's a lot of different ways to do usage messages in shell scripts.
+This is my favorite: you write the usage message in a comment --
+typically right after the shebang line -- <em>BUT</em>, use a special comment prefix
+like <code>#/</code> so that its easy to pull these lines out.</p>
+
+<p>This also illustrates one of shocco's corner features. Only comment lines
+padded with a space are considered documentation. A <code>#</code> followed by any
+other character is considered code.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="c">#/ Usage: shocco [&lt;input&gt;]</span>
+<span class="c">#/ Create literate-programming-style documentation for shell scripts.</span>
+<span class="c">#/</span>
+<span class="c">#/ The shocco program reads from &lt;input&gt; and writes generated documentation</span>
+<span class="c">#/ in HTML format to stdout. When &lt;input&gt; is &#39;-&#39; or not specified, shocco</span>
+<span class="c">#/ reads from stdin.</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>This is the second part of the usage message technique: <code>grep</code> yourself
+for the usage message comment prefix and then cut off the first few
+characters so that everything lines up.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="nb">test</span> <span class="s2">&quot;$1&quot;</span> <span class="o">=</span> <span class="s2">&quot;--help&quot;</span> <span class="o">&amp;&amp;</span> <span class="o">{</span>
+    grep <span class="s1">&#39;^#/&#39;</span> &lt;<span class="s2">&quot;$0&quot;</span> | cut -c4-
+    <span class="nb">exit </span>0
+<span class="o">}</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Make sure we have a <code>TMPDIR</code> set. The <code>:=</code> parameter expansion assigns
+the value if <code>TMPDIR</code> is unset or null.</p>
+
+</td><td class=code><div class=highlight><pre>
+: <span class="k">${</span><span class="nv">TMPDIR</span><span class="p">:=/tmp</span><span class="k">}</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Create a temporary directory for doing work. Use <code>mktemp(1)</code> if
+available; but, since <code>mktemp(1)</code> is not POSIX specified, fallback on naive
+(and insecure) temp dir generation using the program's basename and pid.</p>
+
+</td><td class=code><div class=highlight><pre>
+: <span class="k">${</span><span class="nv">WORK</span><span class="p">:=</span><span class="k">$(</span>
+      <span class="k">if </span><span class="nb">command</span> -v mktemp 1&gt;/dev/null 2&gt;&amp;1
+      <span class="k">then</span>
+<span class="k">          </span>mktemp -dt <span class="k">$(</span>basename <span class="nv">$0</span><span class="k">)</span>
+      <span class="k">else</span>
+<span class="k">          </span><span class="nv">dir</span><span class="o">=</span><span class="s2">&quot;$TMPDIR/$(basename $0).$$&quot;</span>
+          mkdir <span class="s2">&quot;$dir&quot;</span>
+          <span class="nb">echo</span> <span class="s2">&quot;$dir&quot;</span>
+      <span class="k">fi</span>
+  <span class="k">)}</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>We're about to create a ton of shit under our <code>$WORK</code> directory. Register
+an <code>EXIT</code> trap that cleans everything up. This guarantees we don't leave
+anything hanging around unless we're killed with a <code>SIGKILL</code>.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="nb">trap</span> <span class="s2">&quot;rm -rf $WORK&quot;</span> EXIT
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>Preformatting</h2>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>We slurp the input file, apply some light preformatting to make the
+code and doc formatting phases a bit easier, and then write the result
+out to a temp file under the <code>$WORK</code> directory.</p>
+
+<p>Generally speaking, I like to avoid temp files but the two-pass formatting
+logic makes that hard in this case. We may be reading from <code>stdin</code> or a
+fifo, so we don't want to assume <em>input</em> can be read more than once.</p>
+
+</td><td class=code><div class=highlight><pre>
+cat <span class="s2">&quot;$1&quot;</span>                               |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Remove comment leader text from all comment lines. Then prefix all
+comment lines with "DOCS" and interpreted / code lines with "CODE".
+The stream text might look like this after moving through the <code>sed</code>
+filters:</p>
+
+<pre><code>CODE #!/bin/sh
+CODE #/ Usage: schocco &lt;file&gt;
+DOCS Docco for and in POSIX sh.
+CODE
+CODE PATH="/bin:/usr/bin"
+CODE
+DOCS Start by numbering all lines in the input file...
+...
+</code></pre>
+
+</td><td class=code><div class=highlight><pre>
+sed -n <span class="s1">&#39;</span>
+<span class="s1">    s/^/:/</span>
+<span class="s1">    s/^: \{0,\}# /DOCS /p</span>
+<span class="s1">    s/^: \{0,\}#$/DOCS /p</span>
+<span class="s1">    s/^:/CODE /p</span>
+<span class="s1">&#39;</span>                                      |
+
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Write the result out to a temp file. We'll take two passes over it: one
+to extract and format the documentation comments and another to extract
+and syntax highlight the source code.</p>
+
+</td><td class=code><div class=highlight><pre>
+cat &gt; <span class="s2">&quot;$WORK/raw&quot;</span>
+
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Now that we've read and formatted our input file for further parsing,
+change into the work directory. The program will finish up in there.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="nb">cd</span> <span class="s2">&quot;$WORK&quot;</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>First Pass: Comment Formatting</h2>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Start a pipeline going on our preformatted input file.</p>
+
+</td><td class=code><div class=highlight><pre>
+cat raw                                      |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Replace all CODE lines with entirely blank lines.</p>
+
+</td><td class=code><div class=highlight><pre>
+sed <span class="s1">&#39;s/^CODE.*//&#39;</span>                            |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Now squeeze multiple blank lines into a single blank line.</p>
+
+<p><strong>TODO:</strong> <code>cat -s</code> is not POSIX and doesn't squeeze lines on BSD. Use
+the sed line squeezing code mentioned in the POSIX <code>cat(1)</code> manual page
+instead.</p>
+
+</td><td class=code><div class=highlight><pre>
+cat -s                                       |
+
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>At this point in the pipeline, our stream text looks something like this:</p>
+
+<pre><code>DOCS Now that we've read and formatted ...
+DOCS change into the work directory. The rest ...
+DOCS in there.
+
+DOCS First Pass: Comment Formatting
+DOCS ------------------------------
+</code></pre>
+
+<p>Blank lines represent code segments. We want to replace all blank lines
+with a dividing marker and remove the "DOCS" prefix from docs lines.</p>
+
+</td><td class=code><div class=highlight><pre>
+sed <span class="s1">&#39;</span>
+<span class="s1">    s/^$/##### DIVIDER/</span>
+<span class="s1">    s/^DOCS //&#39;</span>                              |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>The current stream text is suitable for input to <code>markdown(1)</code>. It takes
+our doc text with embedded <code>DIVIDER</code>s and outputs HTML.</p>
+
+</td><td class=code><div class=highlight><pre>
+markdown                                     |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Now this where shit starts to get a little crazy. We use <code>csplit(1)</code> to
+split the HTML into a bunch of individual files. The files are named
+as <code>docs0000</code>, <code>docs0001</code>, <code>docs0002</code>, ... Each file includes a single
+<em>section</em>. These files will sit here while we take a similar pass over the
+source code.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="o">(</span>
+    csplit -sk                               <span class="se">\</span>
+           -f docs                           <span class="se">\</span>
+           -n 4                              <span class="se">\</span>
+           - <span class="s1">&#39;/&lt;h5&gt;DIVIDER&lt;\/h5&gt;/&#39;</span> <span class="s1">&#39;{9999}&#39;</span>  <span class="se">\</span>
+           2&gt;/dev/null                      <span class="o">||</span>
+    <span class="nb">true</span>
+<span class="o">)</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>Second Pass: Code Formatting</h2>
+
+<p>Boom.</p>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Get another pipeline going on our performatted input file.</p>
+
+</td><td class=code><div class=highlight><pre>
+cat raw |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Replace DOCS lines with blank lines.</p>
+
+</td><td class=code><div class=highlight><pre>
+sed <span class="s1">&#39;s/^DOCS.*//&#39;</span> |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Squeeze multiple blank lines into a single blank line</p>
+
+</td><td class=code><div class=highlight><pre>
+cat -s |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Replace blank lines with a DIVIDER marker and remove prefix
+from CODE lines.</p>
+
+</td><td class=code><div class=highlight><pre>
+sed <span class="s1">&#39;</span>
+<span class="s1">    s/^$/# DIVIDER/</span>
+<span class="s1">    s/^CODE //&#39;</span> |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Pass code through pygments for syntax highlighting.</p>
+
+</td><td class=code><div class=highlight><pre>
+pygmentize -l sh -f html |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Post filter the pygments output to remove partial <code>&lt;pre&gt;</code> blocks. We add
+these back in at each section when we build the output document.</p>
+
+</td><td class=code><div class=highlight><pre>
+sed <span class="s1">&#39;</span>
+<span class="s1">    s/&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;//</span>
+<span class="s1">    s/^&lt;\/pre&gt;&lt;\/div&gt;//&#39;</span>  |
+
+</pre></div></td></tr><tr><td class=docs>
+
+</td><td class=code><div class=highlight><pre>
+<span class="o">(</span>
+    csplit -sk                                                         <span class="se">\</span>
+           -f code                                                     <span class="se">\</span>
+           -n 4 -                                                      <span class="se">\</span>
+           <span class="s1">&#39;%# DIVIDER%&#39;</span> <span class="s1">&#39;/&lt;span class=&quot;c&quot;&gt;# DIVIDER&lt;/span&gt;/&#39;</span> <span class="s1">&#39;{9999}&#39;</span> <span class="se">\</span>
+           2&gt;/dev/null <span class="o">||</span>
+    <span class="nb">true</span>
+<span class="o">)</span>
+
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>Recombining</h2>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>At this point, we have separate files for each docs section and separate
+files for each code section.</p>
+
+</td><td class=code><div class=highlight><pre>
+cat <span class="s">&lt;&lt;HTML</span>
+<span class="s">&lt;!DOCTYPE html&gt;</span>
+<span class="s">&lt;html&gt;</span>
+<span class="s">&lt;head&gt;</span>
+<span class="s">    &lt;meta http-eqiv=&#39;content-type&#39; content=&#39;text/html;charset=utf-8&#39;&gt;</span>
+<span class="s">    &lt;title&gt;$(basename $1)&lt;/title&gt;</span>
+<span class="s">    &lt;link rel=stylesheet href=&quot;http://jashkenas.github.com/docco/resources/docco.css&quot;&gt;</span>
+<span class="s">&lt;/head&gt;</span>
+<span class="s">&lt;body&gt;</span>
+<span class="s">&lt;div id=container&gt;</span>
+<span class="s">    &lt;div id=background&gt;&lt;/div&gt;</span>
+<span class="s">    &lt;table cellspacing=0 cellpadding=0&gt;</span>
+<span class="s">    &lt;thead&gt;</span>
+<span class="s">      &lt;tr&gt;</span>
+<span class="s">        &lt;th class=docs&gt;&lt;h1&gt;$(basename $1)&lt;/h1&gt;&lt;/th&gt;</span>
+<span class="s">        &lt;th class=code&gt;&lt;/th&gt;</span>
+<span class="s">      &lt;/tr&gt;</span>
+<span class="s">    &lt;/thead&gt;</span>
+<span class="s">    &lt;tbody&gt;</span>
+<span class="s">        &lt;tr style=display:none&gt;&lt;td&gt;&lt;div&gt;&lt;pre&gt;</span>
+<span class="s">HTML</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>List the split out temp files - one file per line.</p>
+
+</td><td class=code><div class=highlight><pre>
+ls -1 docs<span class="o">[</span>0-9<span class="o">]</span>* code<span class="o">[</span>0-9<span class="o">]</span>* |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Now sort the list of files by the <em>number</em> first and then by the type. The
+list will look something like this when <code>sort</code> is done with it:</p>
+
+<pre><code>docs0000
+code0000
+docs0001
+code0001
+docs0002
+code0002
+...
+</code></pre>
+
+</td><td class=code><div class=highlight><pre>
+sort -n -k1.5 -k1.1r |
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>And if we pass those files to <code>cat</code> in that order, it's concatenate them
+in exactly the way we need. The <code>xargs</code> command reads from <code>stdin</code> and
+passes each line of input as a separate argument to the program given. We
+could also have written this as:</p>
+
+<pre><code>cat $(ls -1 docs* code* | sort -n -k1.5 -k1.1r)
+</code></pre>
+
+<p>I like to keep things to a simple flat pipeline when possible, hence the
+<code>xargs</code> approach.</p>
+
+</td><td class=code><div class=highlight><pre>
+xargs cat            |
+
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Now replace the dividers with table markup.</p>
+
+</td><td class=code><div class=highlight><pre>
+sed <span class="s1">&#39;</span>
+<span class="s1">    s/&lt;h5&gt;DIVIDER&lt;\/h5&gt;/&lt;\/pre&gt;&lt;\/div&gt;&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td class=docs&gt;/</span>
+<span class="s1">    s/&lt;span class=&quot;c&quot;&gt;# DIVIDER&lt;\/span&gt;/&lt;\/td&gt;&lt;td class=code&gt;&lt;div class=highlight&gt;&lt;pre&gt;/</span>
+<span class="s1">    &#39;</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>And output the remaining bit of HTML.</p>
+
+</pre></div></td></tr><tr><td class=docs>
+</td><td class=code><div class=highlight><pre>
+cat <span class="s">&lt;&lt;HTML</span>
+<span class="s">            &lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;</span>
+<span class="s">        &lt;/tr&gt;</span>
+<span class="s">    &lt;/tbody&gt;</span>
+<span class="s">    &lt;/table&gt;</span>
+<span class="s">&lt;/body&gt;</span>
+<span class="s">&lt;/html&gt;</span>
+<span class="s">HTML</span>
+
+</td><td class=code><div class=highlight><pre>
+</pre></div></td></tr><tr><td class=docs>
+
+<p>And that's it</p>
+</td><td class=code><div class=highlight><pre>
+
+            </pre></div></td>
+        </tr>
+    </tbody>
+    </table>
+</body>
+</html>
