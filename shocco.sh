@@ -5,7 +5,7 @@
 # shocco reads shell scripts and produces annotated source documentation
 # in HTML format. Comments are formatted with Markdown and presented
 # alongside syntax highlighted code so as to give an annotation effect. This
-# page is the result of running shocco against its own source file.
+# page is the result of running shocco against [its own source file][sh].
 #
 # shocco can be installed with `make(1)`:
 #
@@ -18,6 +18,8 @@
 #     shocco shocco.sh
 #
 # The HTML files are written to the current working directory.
+#
+# [sh]: https://github.com/rtomayko/shocco/blob/master/shocco.sh#commit
 
 # Setup
 # -----
