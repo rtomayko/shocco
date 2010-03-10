@@ -17,7 +17,7 @@ shocco.html: shocco
 	/bin/sh shocco shocco.sh > shocco.html
 
 install: shocco
-	install -m 0755 $(BINDIR)/shocco
+	install -m 0755 shocco $(BINDIR)/shocco
 
 preview: sup shocco.html
 	$(BROWSER) ./shocco.html
