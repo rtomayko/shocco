@@ -1,0 +1,42 @@
+
+                     __
+               _____/ /_  ____  ______________
+              / ___/ __ \/ __ \/ ___/ ___/ __ \
+             (__  ) / / / /_/ / /__/ /__/ /_/ /
+            /____/_/ /_/\____/\___/\___/\____/
+
+
+    shocco is  a quick-and-dirty, literate-programming-
+    style documentation generator  for and in POSIX sh.
+    See the shocco generated docs for more information:
+
+         <http://rtomayko.github.com/shocco/>
+
+
+                     I N S T A L L
+
+
+  (  git clone git://github.com/rtomayko/shocco.git &&
+     cd shocco    &&      make      &&    make install  )
+
+
+                        M O R E
+
+
+                         Docco
+         <http://jashkenas.github.com/docco/>
+    The  original  quick-and-dirty,  hundred-line-long,
+    literate-programming-style documentation generator.
+
+                         Rocco
+          <http://rtomayko.github.com/rocco/>
+                    For and in Ruby.
+
+
+                     C O P Y I N G
+
+          This is MIT licensed Free Software
+
+                 Copyright (C) 2010 by
+                     Ryan Tomayko
+              <http://tomayko.com/about>
