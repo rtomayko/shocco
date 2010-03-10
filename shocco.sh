@@ -208,7 +208,7 @@ sed '
 
 # Recombining
 # -----------
-#
+
 # At this point, we have separate files for each docs section and separate
 # files for each code section.
 cat <<HTML
@@ -233,16 +233,41 @@ cat <<HTML
         <tr style=display:none><td><div><pre>
 HTML
 
-           ls -1 docs[0-9]* code[0-9]* |
+# List the split out temp files - one file per line.
+ls -1 docs[0-9]* code[0-9]* |
 
-           sort -n -k1.5 -k1.1r |
+# Now sort the list of files by the *number* first and then by the type. The
+# list will look something like this when `sort` is done with it:
+#
+#     docs0000
+#     code0000
+#     docs0001
+#     code0001
+#     docs0002
+#     code0002
+#     ...
+#
+sort -n -k1.5 -k1.1r |
 
-           xargs cat            |
-           sed '
-               s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
-               s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
-               '
+# And if we pass those files to `cat` in that order, it's concatenate them
+# in exactly the way we need. The `xargs` command reads from `stdin` and
+# passes each line of input as a separate argument to the program given. We
+# could also have written this as:
+#
+#     cat $(ls -1 docs* code* | sort -n -k1.5 -k1.1r)
+#
+# I like to keep things to a simple flat pipeline when possible, hence the
+# `xargs` approach.
+xargs cat            |
 
+
+# Now replace the dividers with table markup.
+sed '
+    s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
+    s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
+    '
+
+# And output the remaining bit of HTML.
 cat <<HTML
             </pre></div></td>
         </tr>
@@ -251,3 +276,5 @@ cat <<HTML
 </body>
 </html>
 HTML
+
+# And that's it
