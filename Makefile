@@ -24,4 +24,3 @@ preview: sup shocco.html
 
 clean:
 	rm -f $(PROGRAMS) $(DOCS)
-

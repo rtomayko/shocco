@@ -1,6 +1,4 @@
 #!/bin/sh
-#/ Usage: shocco <file>
-
 # **shocco** is a quick-and-dirty, hundred-line-long, literate-programming-style
 # documentation generator written for and in __POSIX shell__.
 #
@@ -21,15 +19,75 @@
 #
 # The HTML files are written to the current working directory.
 
+# Setup
+# -----
+
 # The most important line in any shell program.
 set -e
 
-# 
-cat $1                                       |
+# There's a lot of different ways to do usage messages in shell scripts.
+# This is my favorite: you write the usage message in a comment --
+# typically right after the shebang line -- *BUT*, use a special comment prefix
+# like `#/` so that its easy to pull these lines out.
+#
+# This also illustrates one of shocco's corner features. Only comment lines
+# padded with a space are considered documentation. A `#` followed by any
+# other character is considered code.
+#
+#/ Usage: shocco [<input>]
+#/ Create literate-programming-style documentation for shell scripts.
+#/
+#/ The shocco program reads from <input> and writes generated documentation
+#/ in HTML format to stdout. When <input> is '-' or not specified, shocco
+#/ reads from stdin.
+
+# This is the second part of the usage message technique: `grep` yourself
+# for the usage message comment prefix and then cut off the first few
+# characters so that everything lines up.
+test "$1" = "--help" && {
+    grep '^#/' <"$0" | cut -c4-
+    exit 0
+}
+
+# Make sure we have a `TMPDIR` set. The `:=` parameter expansion assigns
+# the value if `TMPDIR` is unset or null.
+: ${TMPDIR:=/tmp}
+
+# Create a temporary directory for doing work. Use `mktemp(1)` if
+# available; but, since `mktemp(1)` is not POSIX specified, fallback on naive
+# (and insecure) temp dir generation using the program's basename and pid.
+: ${WORK:=$(
+      if command -v mktemp 1>/dev/null 2>&1
+      then
+          mktemp -dt $(basename $0)
+      else
+          dir="$TMPDIR/$(basename $0).$$"
+          mkdir "$dir"
+          echo "$dir"
+      fi
+  )}
+
+# We're about to create a ton of shit under our `$WORK` directory. Register
+# an `EXIT` trap that cleans everything up. This guarantees we don't leave
+# anything hanging around unless we're killed with a `SIGKILL`.
+trap "rm -rf $WORK" EXIT
+
+# Preformatting
+# -------------
+
+# We slurp the input file, apply some light preformatting to make the
+# code and doc formatting phases a bit easier, and then write the result
+# out to a temp file under the `$WORK` directory.
+#
+# Generally speaking, I like to avoid temp files but the two-pass formatting
+# logic makes that hard in this case. We may be reading from `stdin` or a
+# fifo, so we don't want to assume _input_ can be read more than once.
+cat "$1"                               |
 
 # Remove comment leader text from all comment lines. Then prefix all
 # comment lines with "DOCS" and interpreted / code lines with "CODE".
-# After passing through `sed`, the stream text might look like this:
+# The stream text might look like this after moving through the `sed`
+# filters:
 #
 #     CODE #!/bin/sh
 #     CODE #/ Usage: schocco <file>
@@ -45,41 +103,73 @@ sed -n '
     s/^: \{0,\}# /DOCS /p
     s/^: \{0,\}#$/DOCS /p
     s/^:/CODE /p
-' |
+'                                      |
 
 
-# Write the result out to a temp file but keep the pipeline going.
-# We'll come back
-cat > raw
+# Write the result out to a temp file. We'll take two passes over it: one
+# to extract and format the documentation comments and another to extract
+# and syntax highlight the source code.
+cat > "$WORK/raw"
 
+
+# Now that we've read and formatted our input file for further parsing,
+# change into the work directory. The program will finish up in there.
+cd "$WORK"
 
 # First Pass: Comment Formatting
 # ------------------------------
 
-# Get another pipeline going on our preformatted input file.
-cat raw |
+# Start a pipeline going on our preformatted input file.
+cat raw                                      |
 
-# Replace CODE lines with blank lines.
-sed 's/^CODE.*//'    |
+# Replace all CODE lines with entirely blank lines.
+sed 's/^CODE.*//'                            |
 
-# Squeeze multiple blank lines into a single blank line
-cat -s               |
+# Now squeeze multiple blank lines into a single blank line.
+#
+# __TODO:__ `cat -s` is not POSIX and doesn't squeeze lines on BSD. Use
+# the sed line squeezing code mentioned in the POSIX `cat(1)` manual page
+# instead.
+cat -s                                       |
 
-# Replace blank lines with a DIVIDER marker and remove "DOCS LINE"
-# prefix from DOCS lines.
+
+# At this point in the pipeline, our stream text looks something like this:
+#
+#     DOCS Now that we've read and formatted ...
+#     DOCS change into the work directory. The rest ...
+#     DOCS in there.
+#
+#     DOCS First Pass: Comment Formatting
+#     DOCS ------------------------------
+#
+# Blank lines represent code segments. We want to replace all blank lines
+# with a dividing marker and remove the "DOCS" prefix from docs lines.
 sed '
     s/^$/##### DIVIDER/
-    s/^DOCS //' |
+    s/^DOCS //'                              |
 
-# Pass the current document through markdown
-markdown                   |
+# The current stream text is suitable for input to `markdown(1)`. It takes
+# our doc text with embedded `DIVIDER`s and outputs HTML.
+markdown                                     |
 
-# Split the HTML out into separate files.
-# The `-k` option to csplit 
-(csplit -sk -f docs -n 4 - '/<h5>DIVIDER<\/h5>/' '{9999}' 2>/dev/null || true)
+# Now this where shit starts to get a little crazy. We use `csplit(1)` to
+# split the HTML into a bunch of individual files. The files are named
+# as `docs0000`, `docs0001`, `docs0002`, ... Each file includes a single
+# *section*. These files will sit here while we take a similar pass over the
+# source code.
+(
+    csplit -sk                               \
+           -f docs                           \
+           -n 4                              \
+           - '/<h5>DIVIDER<\/h5>/' '{9999}'  \
+           2>/dev/null                      ||
+    true
+)
 
 # Second Pass: Code Formatting
 # ----------------------------
+#
+# Boom.
 
 # Get another pipeline going on our performatted input file.
 cat raw |
@@ -99,31 +189,39 @@ sed '
 # Pass code through pygments for syntax highlighting.
 pygmentize -l sh -f html |
 
-# Post filter the output to remove
+# Post filter the pygments output to remove partial `<pre>` blocks. We add
+# these back in at each section when we build the output document.
 sed '
     s/<div class="highlight"><pre>//
     s/^<\/pre><\/div>//'  |
 
-(csplit -sk -f code -n 4 - '%# DIVIDER%' '/<span class="c"># DIVIDER</span>/' '{9999}' 2>/dev/null || true)
+#
+(
+    csplit -sk                                                         \
+           -f code                                                     \
+           -n 4 -                                                      \
+           '%# DIVIDER%' '/<span class="c"># DIVIDER</span>/' '{9999}' \
+           2>/dev/null ||
+    true
+)
 
 
 # Recombining
 # -----------
-
+#
 # At this point, we have separate files for each docs section and separate
 # files for each code section.
-
 cat <<HTML
 <!DOCTYPE html>
 <html>
 <head>
     <meta http-eqiv='content-type' content='text/html;charset=utf-8'>
     <title>$(basename $1)</title>
-    <link rel="stylesheet" href="http://jashkenas.github.com/docco/resources/docco.css">
+    <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
 </head>
 <body>
-<div id='container'>
-    <div id="background"></div>
+<div id=container>
+    <div id=background></div>
     <table cellspacing=0 cellpadding=0>
     <thead>
       <tr>
@@ -132,15 +230,18 @@ cat <<HTML
       </tr>
     </thead>
     <tbody>
-        <tr style='display:none'><td><div><pre>
+        <tr style=display:none><td><div><pre>
 HTML
 
-# 
-cat $(ls -1 docs[0-9]* code[0-9]* | sort -n -k1.5 -k1.1r) |
-sed '
-    s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
-    s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
-    '
+           ls -1 docs[0-9]* code[0-9]* |
+
+           sort -n -k1.5 -k1.1r |
+
+           xargs cat            |
+           sed '
+               s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
+               s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
+               '
 
 cat <<HTML
             </pre></div></td>
