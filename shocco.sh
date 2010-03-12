@@ -1,28 +1,33 @@
 #!/bin/sh
-# **shocco** is a quick-and-dirty, hundred-line-long, literate-programming-style
-# documentation generator written for and in __POSIX shell__.
+# **shocco** is a quick-and-dirty, literate-programming-style documentation
+# generator written for and in __POSIX shell__. It borrows liberally from
+# [Docco][do], the original Q&D literate-programming-style doc generator.
 #
-# shocco reads shell scripts and produces annotated source documentation
+# `shocco(1)` reads shell scripts and produces annotated source documentation
 # in HTML format. Comments are formatted with Markdown and presented
 # alongside syntax highlighted code so as to give an annotation effect. This
-# page is the result of running shocco against [its own source file][sh].
+# page is the result of running `shocco` against [its own source file][sh].
 #
-# shocco can be installed with `make(1)`:
+# shocco is built with `make(1)` and installs under `/usr/local` by default:
 #
 #     git clone git://github.com/rtomayko/schocco.git
-#     (cd schocco && make && make install)
+#     cd schocco
+#     make
+#     sudo make install
+#     # or just copy 'shocco' wherever you need it
 #
 # Once installed, the `shocco` program can be used to generate documentation
 # for a shell script:
 #
 #     shocco shocco.sh
 #
-# The HTML files are written to the current working directory.
+# The generated HTML is written to `stdout`.
 #
+# [do]: http://jashkenas.github.com/docco/
 # [sh]: https://github.com/rtomayko/shocco/blob/master/shocco.sh#commit
 
-# Setup
-# -----
+# Usage and Prerequisites
+# -----------------------
 
 # The most important line in any shell program.
 set -e
@@ -39,9 +44,9 @@ set -e
 #/ Usage: shocco [<input>]
 #/ Create literate-programming-style documentation for shell scripts.
 #/
-#/ The shocco program reads from <input> and writes generated documentation
-#/ in HTML format to stdout. When <input> is '-' or not specified, shocco
-#/ reads from stdin.
+#/ The shocco program reads a shell script from <input> and writes
+#/ generated documentation in HTML format to stdout. When <input> is
+#/ '-' or not specified, shocco reads from stdin.
 
 # This is the second part of the usage message technique: `grep` yourself
 # for the usage message comment prefix and then cut off the first few
@@ -50,6 +55,40 @@ test "$1" = "--help" && {
     grep '^#/' <"$0" | cut -c4-
     exit 0
 }
+
+# We're going to need a `markdown` command to run comments through. This can
+# be [Gruber's `Markdown.pl`][md] (included in the shocco distribution) or
+# Discount's super fast `markdown(1)` in C. Try to figure out if either are
+# available and then bail if we can't find anything.
+#
+# [md]: http://daringfireball.net/projects/markdown/
+# [ds]: http://www.pell.portland.or.us/~orc/Code/discount/
+command -v markdown >/dev/null || {
+    if command -v Markdown.pl >/dev/null
+    then alias markdown='Markdown.pl'
+
+    elif test -f "$(dirname $0)/Markdown.pl"
+    then alias markdown="perl $(dirname $0)/Markdown.pl"
+
+    else echo "$(basename $0): markdown command not found." 1>&2
+         exit 1
+    fi
+}
+
+# Check that [Pygments][py] is installed for syntax highlighting.
+#
+# This is a fairly hefty prerequisite. Eventually, I'd like to fallback
+# on a simple non-highlighting preformatter when Pygments isn't available. For
+# now, just bail out if we can't find the `pygmentize` program.
+#
+# [py]: http://pygments.org/
+command -v pygmentize >/dev/null || {
+    echo "$(basename $0): pygmentize command not found." 1>&2
+    exit 1
+}
+
+# Work and Cleanup
+# ----------------
 
 # Make sure we have a `TMPDIR` set. The `:=` parameter expansion assigns
 # the value if `TMPDIR` is unset or null.
@@ -121,10 +160,12 @@ cd "$WORK"
 # First Pass: Comment Formatting
 # ------------------------------
 
-# Start a pipeline going on our preformatted input file.
+# Start a pipeline going on our preformatted input.
 cat raw                                      |
 
-# Replace all CODE lines with entirely blank lines.
+# Replace all CODE lines with entirely blank lines. We're not interested
+# in code right now, other than knowing where comments end and code begins
+# and code begins and comments end.
 sed 's/^CODE.*//'                            |
 
 # Now squeeze multiple blank lines into a single blank line.
@@ -171,7 +212,9 @@ markdown                                     |
 # Second Pass: Code Formatting
 # ----------------------------
 #
-# Boom.
+# This is exactly like the first pass but we're focusing on code instead of
+# comments. We use the same basic technique to separate the two and isolate
+# the code blocks.
 
 # Get another pipeline going on our performatted input file.
 cat raw |
@@ -179,16 +222,16 @@ cat raw |
 # Replace DOCS lines with blank lines.
 sed 's/^DOCS.*//' |
 
-# Squeeze multiple blank lines into a single blank line
+# Squeeze multiple blank lines into a single blank line.
 cat -s |
 
-# Replace blank lines with a DIVIDER marker and remove prefix
-# from CODE lines.
+# Replace blank lines with a DIVIDER marker and remove prefix from CODE lines.
 sed '
     s/^$/# DIVIDER/
     s/^CODE //' |
 
-# Pass code through pygments for syntax highlighting.
+# Now pass the code through pygments for syntax highlighting. We tell it the
+# the input is `sh` and that we want HTML output.
 pygmentize -l sh -f html |
 
 # Post filter the pygments output to remove partial `<pre>` blocks. We add
@@ -197,7 +240,9 @@ sed '
     s/<div class="highlight"><pre>//
     s/^<\/pre><\/div>//'  |
 
-#
+# Again with the `csplit(1)`. Each code section is written to a separate
+# file, this time with a `codeXXX` prefix. There should be the same number
+# of `codeXXX` files as there are `docsXXX` files.
 (
     csplit -sk                                                         \
            -f code                                                     \
@@ -207,18 +252,26 @@ sed '
     true
 )
 
-
-# Recombining
-# -----------
-
 # At this point, we have separate files for each docs section and separate
 # files for each code section.
-cat <<HTML
+
+# HTML Template
+# -------------
+
+# Create a function for apply the standard [Docco][do] HTML layout, using
+# [jashkenas][ja]'s gorgeous CSS for styles. Wrapping the layout in a function
+# lets us apply it elsewhere simply by piping in a body.
+#
+# [ja]: http://github.com/jashkenas/
+# [do]: http://jashkenas.github.com/docco/
+layout () {
+    local title="$1"
+    cat <<HTML
 <!DOCTYPE html>
 <html>
 <head>
     <meta http-eqiv='content-type' content='text/html;charset=utf-8'>
-    <title>$(basename $1)</title>
+    <title>${title}</title>
     <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
 </head>
 <body>
@@ -227,19 +280,36 @@ cat <<HTML
     <table cellspacing=0 cellpadding=0>
     <thead>
       <tr>
-        <th class=docs><h1>$(basename $1)</h1></th>
+        <th class=docs><h1>${title}</h1></th>
         <th class=code></th>
       </tr>
     </thead>
     <tbody>
         <tr style=display:none><td><div><pre>
+        $(cat)
+        </pre></div></td></tr>
+    </tbody>
+    </table>
+</div>
+</body>
+</html>
 HTML
+}
 
-# List the split out temp files - one file per line.
+# Recombining
+# -----------
+
+# Alright, we have separate files for each docs section and separate
+# files for each code section. We've defined a function to wrap the
+# results in the standard layout. All that's left to do now is put
+# everything back together.
+
+# Start the pipeline with a simple list of split out temp filename. One file
+# per line.
 ls -1 docs[0-9]* code[0-9]* |
 
 # Now sort the list of files by the *number* first and then by the type. The
-# list will look something like this when `sort` is done with it:
+# list will look something like this when `sort(1)` is done with it:
 #
 #     docs0000
 #     code0000
@@ -249,34 +319,54 @@ ls -1 docs[0-9]* code[0-9]* |
 #     code0002
 #     ...
 #
-sort -n -k1.5 -k1.1r |
+sort -n -k1.5 -k1.1r        |
 
-# And if we pass those files to `cat` in that order, it's concatenate them
-# in exactly the way we need. The `xargs` command reads from `stdin` and
-# passes each line of input as a separate argument to the program given. We
-# could also have written this as:
+# And if we pass those files to `cat(1)` in that order, it concatenates them
+# in exactly the way we need. `xargs(1)` reads from `stdin` and passes each
+# line of input as a separate argument to the program given.
+#
+# We could also have written this as:
 #
 #     cat $(ls -1 docs* code* | sort -n -k1.5 -k1.1r)
 #
 # I like to keep things to a simple flat pipeline when possible, hence the
 # `xargs` approach.
-xargs cat            |
+xargs cat                   |
 
 
-# Now replace the dividers with table markup.
+# Run a quick substitution on the embedded dividers to turn them into table
+# rows and cells. This also wraps each code block in a `<div class=highlight>`
+# so that the CSS kicks in properly.
 sed '
     s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
     s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
-    '
+    '                       |
 
-# And output the remaining bit of HTML.
-cat <<HTML
-            </pre></div></td>
-        </tr>
-    </tbody>
-    </table>
-</body>
-</html>
-HTML
+# Pipe our recombined HTML into the layout and let it write the result to
+# `stdout`.
+layout "$(basename $1)"
 
-# And that's it
+# More
+# ----
+#
+# **shocco** is the third tool in a growing family of quick-and-dirty,
+# literate-programming-style documentation generators:
+#
+#   * [Docco][do] - The original. Written in CoffeeScript and generates
+#     documentation for CoffeeScript, JavaScript, and Ruby.
+#   * [Rocco][ro] - A port of Docco to Ruby.
+#
+# If you like this sort of thing, you may also find interesting Knuth's
+# massive body of work on literate programming:
+#
+#   * [Knuth: Literate Programming][kn]
+#   * [Literate Programming on Wikipedia][wi]
+#
+# [ro]: http://rtomayko.github.com/rocco/
+# [do]: http://jashkenas.github.com/docco/
+# [kn]: http://www-cs-faculty.stanford.edu/~knuth/lp.html
+# [wi]: http://en.wikipedia.org/wiki/Literate_programming
+
+# Copyright (C) [Ryan Tomayko <tomayko.com/about>](http://tomayko.com/about)<br>
+# This is Free Software distributed under the MIT license.
+:

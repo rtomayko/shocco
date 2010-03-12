@@ -21,7 +21,6 @@ build: shocco shocco.html
 	@echo "run \`make install' to install under $(BINDIR) ..."
 	@echo "or, just copy the \`$(SOURCEDIR)/shocco' file where you need it."
 
-
 shocco: shocco.sh
 	@echo "==========================================================="
 	$(SHELL) -n shocco.sh
@@ -29,7 +28,8 @@ shocco: shocco.sh
 	chmod 0755 shocco
 
 shocco.html: shocco
-	$(SHELL) shocco shocco.sh > shocco.html
+	$(SHELL) shocco shocco.sh > shocco.html+
+	mv shocco.html+ shocco.html
 
 index.html: shocco.html
 	cp -p shocco.html index.html
