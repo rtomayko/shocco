@@ -17,20 +17,24 @@
     </thead>
     <tbody>
         <tr style=display:none><td><div><pre>
-</pre></div></td></tr><tr><td class=docs>
+        </pre></div></td></tr><tr><td class=docs>
 
-<p><strong>shocco</strong> is a quick-and-dirty, hundred-line-long, literate-programming-style
-documentation generator written for and in <strong>POSIX shell</strong>.</p>
+<p><strong>shocco</strong> is a quick-and-dirty, literate-programming-style documentation
+generator written for and in <strong>POSIX shell</strong>. It borrows liberally from
+<a href="http://jashkenas.github.com/docco/">Docco</a>, the original Q&amp;D literate-programming-style doc generator.</p>
 
-<p>shocco reads shell scripts and produces annotated source documentation
+<p><code>shocco(1)</code> reads shell scripts and produces annotated source documentation
 in HTML format. Comments are formatted with Markdown and presented
 alongside syntax highlighted code so as to give an annotation effect. This
-page is the result of running shocco against <a href="https://github.com/rtomayko/shocco/blob/master/shocco.sh#commit">its own source file</a>.</p>
+page is the result of running <code>shocco</code> against <a href="https://github.com/rtomayko/shocco/blob/master/shocco.sh#commit">its own source file</a>.</p>
 
-<p>shocco can be installed with <code>make(1)</code>:</p>
+<p>shocco is built with <code>make(1)</code> and installs under <code>/usr/local</code> by default:</p>
 
 <pre><code>git clone git://github.com/rtomayko/schocco.git
-(cd schocco &amp;&amp; make &amp;&amp; make install)
+cd schocco
+make
+sudo make install
+# or just copy 'shocco' wherever you need it
 </code></pre>
 
 <p>Once installed, the <code>shocco</code> program can be used to generate documentation
@@ -39,13 +43,13 @@ for a shell script:</p>
 <pre><code>shocco shocco.sh
 </code></pre>
 
-<p>The HTML files are written to the current working directory.</p>
+<p>The generated HTML is written to <code>stdout</code>.</p>
 
 </td><td class=code><div class=highlight><pre>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<h2>Setup</h2>
+<h2>Usage and Prerequisites</h2>
 
 </td><td class=code><div class=highlight><pre>
 
@@ -71,9 +75,9 @@ other character is considered code.</p>
 <span class="c">#/ Usage: shocco [&lt;input&gt;]</span>
 <span class="c">#/ Create literate-programming-style documentation for shell scripts.</span>
 <span class="c">#/</span>
-<span class="c">#/ The shocco program reads from &lt;input&gt; and writes generated documentation</span>
-<span class="c">#/ in HTML format to stdout. When &lt;input&gt; is &#39;-&#39; or not specified, shocco</span>
-<span class="c">#/ reads from stdin.</span>
+<span class="c">#/ The shocco program reads a shell script from &lt;input&gt; and writes</span>
+<span class="c">#/ generated documentation in HTML format to stdout. When &lt;input&gt; is</span>
+<span class="c">#/ &#39;-&#39; or not specified, shocco reads from stdin.</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
@@ -86,6 +90,46 @@ characters so that everything lines up.</p>
     grep <span class="s1">&#39;^#/&#39;</span> &lt;<span class="s2">&quot;$0&quot;</span> | cut -c4-
     <span class="nb">exit </span>0
 <span class="o">}</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>We're going to need a <code>markdown</code> command to run comments through. This can
+be <a href="http://daringfireball.net/projects/markdown/">Gruber's <code>Markdown.pl</code></a> (included in the shocco distribution) or
+Discount's super fast <code>markdown(1)</code> in C. Try to figure out if either are
+available and then bail if we can't find anything.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="nb">command</span> -v markdown &gt;/dev/null <span class="o">||</span> <span class="o">{</span>
+    <span class="k">if </span><span class="nb">command</span> -v Markdown.pl &gt;/dev/null
+    <span class="k">then </span><span class="nb">alias </span><span class="nv">markdown</span><span class="o">=</span><span class="s1">&#39;Markdown.pl&#39;</span>
+
+    <span class="k">elif </span><span class="nb">test</span> -f <span class="s2">&quot;$(dirname $0)/Markdown.pl&quot;</span>
+    <span class="k">then </span><span class="nb">alias </span><span class="nv">markdown</span><span class="o">=</span><span class="s2">&quot;perl $(dirname $0)/Markdown.pl&quot;</span>
+
+    <span class="k">else </span><span class="nb">echo</span> <span class="s2">&quot;$(basename $0): markdown command not found.&quot;</span> 1&gt;&amp;2
+         <span class="nb">exit </span>1
+    <span class="k">fi</span>
+<span class="o">}</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Check that <a href="http://pygments.org/">Pygments</a> is installed for syntax highlighting.</p>
+
+<p>This is a fairly hefty prerequisite. Eventually, I'd like to fallback
+on a simple non-highlighting preformatter when Pygments isn't available. For
+now, just bail out if we can't find the <code>pygmentize</code> program.</p>
+
+</td><td class=code><div class=highlight><pre>
+<span class="nb">command</span> -v pygmentize &gt;/dev/null <span class="o">||</span> <span class="o">{</span>
+    <span class="nb">echo</span> <span class="s2">&quot;$(basename $0): pygmentize command not found.&quot;</span> 1&gt;&amp;2
+    <span class="nb">exit </span>1
+<span class="o">}</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>Work and Cleanup</h2>
+
+</td><td class=code><div class=highlight><pre>
 
 </pre></div></td></tr><tr><td class=docs>
 
@@ -193,14 +237,16 @@ change into the work directory. The program will finish up in there.</p>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Start a pipeline going on our preformatted input file.</p>
+<p>Start a pipeline going on our preformatted input.</p>
 
 </td><td class=code><div class=highlight><pre>
 cat raw                                      |
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Replace all CODE lines with entirely blank lines.</p>
+<p>Replace all CODE lines with entirely blank lines. We're not interested
+in code right now, other than knowing where comments end and code begins
+and code begins and comments end.</p>
 
 </td><td class=code><div class=highlight><pre>
 sed <span class="s1">&#39;s/^CODE.*//&#39;</span>                            |
@@ -267,7 +313,9 @@ source code.</p>
 
 <h2>Second Pass: Code Formatting</h2>
 
-<p>Boom.</p>
+<p>This is exactly like the first pass but we're focusing on code instead of
+comments. We use the same basic technique to separate the two and isolate
+the code blocks.</p>
 
 </td><td class=code><div class=highlight><pre>
 
@@ -287,15 +335,14 @@ sed <span class="s1">&#39;s/^DOCS.*//&#39;</span> |
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Squeeze multiple blank lines into a single blank line</p>
+<p>Squeeze multiple blank lines into a single blank line.</p>
 
 </td><td class=code><div class=highlight><pre>
 cat -s |
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Replace blank lines with a DIVIDER marker and remove prefix
-from CODE lines.</p>
+<p>Replace blank lines with a DIVIDER marker and remove prefix from CODE lines.</p>
 
 </td><td class=code><div class=highlight><pre>
 sed <span class="s1">&#39;</span>
@@ -304,7 +351,8 @@ sed <span class="s1">&#39;</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Pass code through pygments for syntax highlighting.</p>
+<p>Now pass the code through pygments for syntax highlighting. We tell it the
+the input is <code>sh</code> and that we want HTML output.</p>
 
 </td><td class=code><div class=highlight><pre>
 pygmentize -l sh -f html |
@@ -321,6 +369,10 @@ sed <span class="s1">&#39;</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
+<p>Again with the <code>csplit(1)</code>. Each code section is written to a separate
+file, this time with a <code>codeXXX</code> prefix. There should be the same number
+of <code>codeXXX</code> files as there are <code>docsXXX</code> files.</p>
+
 </td><td class=code><div class=highlight><pre>
 <span class="o">(</span>
     csplit -sk                                                         <span class="se">\</span>
@@ -331,6 +383,57 @@ sed <span class="s1">&#39;</span>
     <span class="nb">true</span>
 <span class="o">)</span>
 
+</pre></div></td></tr><tr><td class=docs>
+
+<p>At this point, we have separate files for each docs section and separate
+files for each code section.</p>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>HTML Template</h2>
+
+</td><td class=code><div class=highlight><pre>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Create a function for apply the standard <a href="http://jashkenas.github.com/docco/">Docco</a> HTML layout, using
+<a href="http://github.com/jashkenas/">jashkenas</a>'s gorgeous CSS for styles. Wrapping the layout in a function
+lets us apply it elsewhere simply by piping in a body.</p>
+
+</td><td class=code><div class=highlight><pre>
+layout <span class="o">()</span> <span class="o">{</span>
+    <span class="nb">local </span><span class="nv">title</span><span class="o">=</span><span class="s2">&quot;$1&quot;</span>
+    cat <span class="s">&lt;&lt;HTML</span>
+<span class="s">&lt;!DOCTYPE html&gt;</span>
+<span class="s">&lt;html&gt;</span>
+<span class="s">&lt;head&gt;</span>
+<span class="s">    &lt;meta http-eqiv=&#39;content-type&#39; content=&#39;text/html;charset=utf-8&#39;&gt;</span>
+<span class="s">    &lt;title&gt;${title}&lt;/title&gt;</span>
+<span class="s">    &lt;link rel=stylesheet href=&quot;http://jashkenas.github.com/docco/resources/docco.css&quot;&gt;</span>
+<span class="s">&lt;/head&gt;</span>
+<span class="s">&lt;body&gt;</span>
+<span class="s">&lt;div id=container&gt;</span>
+<span class="s">    &lt;div id=background&gt;&lt;/div&gt;</span>
+<span class="s">    &lt;table cellspacing=0 cellpadding=0&gt;</span>
+<span class="s">    &lt;thead&gt;</span>
+<span class="s">      &lt;tr&gt;</span>
+<span class="s">        &lt;th class=docs&gt;&lt;h1&gt;${title}&lt;/h1&gt;&lt;/th&gt;</span>
+<span class="s">        &lt;th class=code&gt;&lt;/th&gt;</span>
+<span class="s">      &lt;/tr&gt;</span>
+<span class="s">    &lt;/thead&gt;</span>
+<span class="s">    &lt;tbody&gt;</span>
+<span class="s">        &lt;tr style=display:none&gt;&lt;td&gt;&lt;div&gt;&lt;pre&gt;</span>
+<span class="s">        $(cat)</span>
+<span class="s">        &lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;&lt;/tr&gt;</span>
+<span class="s">    &lt;/tbody&gt;</span>
+<span class="s">    &lt;/table&gt;</span>
+<span class="s">&lt;/div&gt;</span>
+<span class="s">&lt;/body&gt;</span>
+<span class="s">&lt;/html&gt;</span>
+<span class="s">HTML</span>
+<span class="o">}</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
@@ -340,35 +443,17 @@ sed <span class="s1">&#39;</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>At this point, we have separate files for each docs section and separate
-files for each code section.</p>
+<p>Alright, we have separate files for each docs section and separate
+files for each code section. We've defined a function to wrap the
+results in the standard layout. All that's left to do now is put
+everything back together.</p>
 
 </td><td class=code><div class=highlight><pre>
-cat <span class="s">&lt;&lt;HTML</span>
-<span class="s">&lt;!DOCTYPE html&gt;</span>
-<span class="s">&lt;html&gt;</span>
-<span class="s">&lt;head&gt;</span>
-<span class="s">    &lt;meta http-eqiv=&#39;content-type&#39; content=&#39;text/html;charset=utf-8&#39;&gt;</span>
-<span class="s">    &lt;title&gt;$(basename $1)&lt;/title&gt;</span>
-<span class="s">    &lt;link rel=stylesheet href=&quot;http://jashkenas.github.com/docco/resources/docco.css&quot;&gt;</span>
-<span class="s">&lt;/head&gt;</span>
-<span class="s">&lt;body&gt;</span>
-<span class="s">&lt;div id=container&gt;</span>
-<span class="s">    &lt;div id=background&gt;&lt;/div&gt;</span>
-<span class="s">    &lt;table cellspacing=0 cellpadding=0&gt;</span>
-<span class="s">    &lt;thead&gt;</span>
-<span class="s">      &lt;tr&gt;</span>
-<span class="s">        &lt;th class=docs&gt;&lt;h1&gt;$(basename $1)&lt;/h1&gt;&lt;/th&gt;</span>
-<span class="s">        &lt;th class=code&gt;&lt;/th&gt;</span>
-<span class="s">      &lt;/tr&gt;</span>
-<span class="s">    &lt;/thead&gt;</span>
-<span class="s">    &lt;tbody&gt;</span>
-<span class="s">        &lt;tr style=display:none&gt;&lt;td&gt;&lt;div&gt;&lt;pre&gt;</span>
-<span class="s">HTML</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>List the split out temp files - one file per line.</p>
+<p>Start the pipeline with a simple list of split out temp filename. One file
+per line.</p>
 
 </td><td class=code><div class=highlight><pre>
 ls -1 docs<span class="o">[</span>0-9<span class="o">]</span>* code<span class="o">[</span>0-9<span class="o">]</span>* |
@@ -376,7 +461,7 @@ ls -1 docs<span class="o">[</span>0-9<span class="o">]</span>* code<span class="
 </pre></div></td></tr><tr><td class=docs>
 
 <p>Now sort the list of files by the <em>number</em> first and then by the type. The
-list will look something like this when <code>sort</code> is done with it:</p>
+list will look something like this when <code>sort(1)</code> is done with it:</p>
 
 <pre><code>docs0000
 code0000
@@ -388,14 +473,15 @@ code0002
 </code></pre>
 
 </td><td class=code><div class=highlight><pre>
-sort -n -k1.5 -k1.1r |
+sort -n -k1.5 -k1.1r        |
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>And if we pass those files to <code>cat</code> in that order, it's concatenate them
-in exactly the way we need. The <code>xargs</code> command reads from <code>stdin</code> and
-passes each line of input as a separate argument to the program given. We
-could also have written this as:</p>
+<p>And if we pass those files to <code>cat(1)</code> in that order, it concatenates them
+in exactly the way we need. <code>xargs(1)</code> reads from <code>stdin</code> and passes each
+line of input as a separate argument to the program given.</p>
+
+<p>We could also have written this as:</p>
 
 <pre><code>cat $(ls -1 docs* code* | sort -n -k1.5 -k1.1r)
 </code></pre>
@@ -404,43 +490,66 @@ could also have written this as:</p>
 <code>xargs</code> approach.</p>
 
 </td><td class=code><div class=highlight><pre>
-xargs cat            |
+xargs cat                   |
 
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Now replace the dividers with table markup.</p>
+<p>Run a quick substitution on the embedded dividers to turn them into table
+rows and cells. This also wraps each code block in a <code>&lt;div class=highlight&gt;</code>
+so that the CSS kicks in properly.</p>
 
 </td><td class=code><div class=highlight><pre>
 sed <span class="s1">&#39;</span>
 <span class="s1">    s/&lt;h5&gt;DIVIDER&lt;\/h5&gt;/&lt;\/pre&gt;&lt;\/div&gt;&lt;\/td&gt;&lt;\/tr&gt;&lt;tr&gt;&lt;td class=docs&gt;/</span>
 <span class="s1">    s/&lt;span class=&quot;c&quot;&gt;# DIVIDER&lt;\/span&gt;/&lt;\/td&gt;&lt;td class=code&gt;&lt;div class=highlight&gt;&lt;pre&gt;/</span>
-<span class="s1">    &#39;</span>
+<span class="s1">    &#39;</span>                       |
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>And output the remaining bit of HTML.</p>
+<p>Pipe our recombined HTML into the layout and let it write the result to
+<code>stdout</code>.</p>
+
+</td><td class=code><div class=highlight><pre>
+layout <span class="s2">&quot;$(basename $1)&quot;</span>
+
+</pre></div></td></tr><tr><td class=docs>
+
+<h2>More</h2>
+
+<p><strong>shocco</strong> is the third tool in a growing family of quick-and-dirty,
+literate-programming-style documentation generators:</p>
+
+<ul>
+<li><a href="http://jashkenas.github.com/docco/">Docco</a> - The original. Written in CoffeeScript and generates
+documentation for CoffeeScript, JavaScript, and Ruby.</li>
+<li><a href="http://rtomayko.github.com/rocco/">Rocco</a> - A port of Docco to Ruby.</li>
+</ul>
+
+<p>If you like this sort of thing, you may also find interesting Knuth's
+massive body of work on literate programming:</p>
+
+<ul>
+<li><a href="http://www-cs-faculty.stanford.edu/~knuth/lp.html">Knuth: Literate Programming</a></li>
+<li><a href="http://en.wikipedia.org/wiki/Literate_programming">Literate Programming on Wikipedia</a></li>
+</ul>
+
+</td><td class=code><div class=highlight><pre>
+
+</td><td class=code><div class=highlight><pre>
+</pre></div></td></tr><tr><td class=docs>
+
+<p>Copyright (C) <a href="http://tomayko.com/about">Ryan Tomayko <tomayko.com/about></a><br>
+This is Free Software distributed under the MIT license.</p>
 
 </pre></div></td></tr><tr><td class=docs>
 </td><td class=code><div class=highlight><pre>
-cat <span class="s">&lt;&lt;HTML</span>
-<span class="s">            &lt;/pre&gt;&lt;/div&gt;&lt;/td&gt;</span>
-<span class="s">        &lt;/tr&gt;</span>
-<span class="s">    &lt;/tbody&gt;</span>
-<span class="s">    &lt;/table&gt;</span>
-<span class="s">&lt;/body&gt;</span>
-<span class="s">&lt;/html&gt;</span>
-<span class="s">HTML</span>
+:
 
-</td><td class=code><div class=highlight><pre>
 </pre></div></td></tr><tr><td class=docs>
-
-<p>And that's it</p>
-</td><td class=code><div class=highlight><pre>
-
-            </pre></div></td>
-        </tr>
+        </pre></div></td></tr>
     </tbody>
     </table>
+</div>
 </body>
 </html>
