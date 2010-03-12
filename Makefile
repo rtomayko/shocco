@@ -1,3 +1,5 @@
+.POSIX:
+
 # The default target ...
 all::
 
@@ -16,10 +18,10 @@ sup:
 	@cat README | head -8
 
 build: shocco shocco.html
-	@echo "==========================================================="
-	@echo "shocco built at \`$(SOURCEDIR)/shocco' ..."
-	@echo "run \`make install' to install under $(BINDIR) ..."
-	@echo "or, just copy the \`$(SOURCEDIR)/shocco' file where you need it."
+	echo "==========================================================="
+	echo "shocco built at \`$(SOURCEDIR)/shocco' ..."
+	echo "run \`make install' to install under $(BINDIR) ..."
+	echo "or, just copy the \`$(SOURCEDIR)/shocco' file where you need it."
 
 shocco: shocco.sh
 	@echo "==========================================================="
@@ -28,13 +30,14 @@ shocco: shocco.sh
 	chmod 0755 shocco
 
 shocco.html: shocco
-	$(SHELL) shocco shocco.sh > shocco.html+
+	./shocco shocco.sh > shocco.html+
 	mv shocco.html+ shocco.html
 
 index.html: shocco.html
 	cp -p shocco.html index.html
 
-install: shocco
+install:
+	test -f shocco
 	mkdir -p $(BINDIR)
 	cp shocco $(BINDIR)/shocco
 	chmod 0755 $(BINDIR)/shocco
@@ -45,4 +48,6 @@ read: sup shocco.html
 clean:
 	rm -f $(PROGRAMS) $(DOCS)
 
-.PHONY: sup clean read install
+.SUFFIXES:
+
+.SILENT: build
