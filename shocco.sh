@@ -137,15 +137,16 @@ trap "rm -rf $WORK" 0
 
 # Preformatting
 # -------------
-
-# We slurp the input file, apply some light preformatting to make the
-# code and doc formatting phases a bit easier, and then write the result
-# out to a temp file under the `$WORK` directory.
 #
-# Generally speaking, I like to avoid temp files but the two-pass formatting
-# logic makes that hard in this case. We may be reading from `stdin` or a
-# fifo, so we don't want to assume `<source>` can be read more than once.
-cat "$file"                                  |
+# Start out by applying some light preformatting to the `<source>` file to
+# make the code and doc formatting phases a bit easier. The result of this
+# pipeline is written to a temp file under the `$WORK` directory so we can
+# take a few passes over it.
+
+# Get a pipeline going with the `<source>` data. We write a single blank
+# line at the end of the file to make sure we have an equal number of code/comment
+# pairs.
+(cat "$file" && printf "\n\n# \n\n")         |
 
 # We want the shebang line and any code preceding the first comment to
 # appear as the first code block. This inverts the normal flow of things.
@@ -188,8 +189,8 @@ cat "$file"                                  |
             if test -n "$codehead"
             then docshead="$docsbuf"
                  docsbuf=""
-                 echo "$docshead"
-                 echo "$codehead"
+                 printf "%s" "$docshead"
+                 printf "%s" "$codehead"
                  echo "$line"
                  exec cat
             else codehead="$codebuf"
@@ -197,6 +198,12 @@ cat "$file"                                  |
             fi
         fi
     done
+
+    # We made it to the end of the file without a single comment line, or
+    # there was only a single comment block ending the file. Output our
+    # docsbuf or a fake comment and then the codebuf or codehead.
+    echo "${docsbuf:-#}"
+    echo "${codebuf:-"$codehead"}"
 )                                            |
 
 # Remove comment leader text from all comment lines. Then prefix all
@@ -242,7 +249,6 @@ sed 's/^CODE.*//' < raw                      |
 # instead.
 cat -s                                       |
 
-
 # At this point in the pipeline, our stream text looks something like this:
 #
 #     DOCS Now that we've read and formatted ...
@@ -275,6 +281,7 @@ $MARKDOWN                                    |
            2>/dev/null                      ||
     true
 )
+
 
 # Second Pass: Code Formatting
 # ----------------------------
@@ -351,7 +358,7 @@ layout () {
       </tr>
     </thead>
     <tbody>
-        <tr><td class='docs'>$(cat)</pre></div></td></tr>
+        <tr><td class='docs'>$(cat)</td><td class='code'></td></tr>
     </tbody>
     </table>
 </div>
@@ -411,13 +418,6 @@ xargs cat                                    |
         s@${CODEDIVIDER}@${CODEREPLACE}@
     "
 }                                            |
-
-
-# Strip newlines from the opening `<pre>` blocks. We accidentally insert
-# these as part of the split/recombine processing.
-#
-# **TODO:** avoid `perl`. try to use POSIX features.
-perl -pe 's/<pre>\n/<pre>/m'                 |
 
 # Pipe our recombined HTML into the layout and let it write the result to
 # `stdout`.
