@@ -133,7 +133,7 @@ test -z "$WORK" -o "$WORK" = '/' && {
 # We're about to create a ton of shit under our `$WORK` directory. Register
 # an `EXIT` trap that cleans everything up. This guarantees we don't leave
 # anything hanging around unless we're killed with a `SIGKILL`.
-trap "rm -rf $WORK" EXIT
+trap "rm -rf $WORK" 0
 
 # Preformatting
 # -------------
