@@ -7,7 +7,7 @@
 
 
     shocco is  a quick-and-dirty, literate-programming-
-    style documentation generator  for and in POSIX sh.
+    style documentation generator for / in POSIX shell.
     See the shocco generated docs for more information:
 
          <http://rtomayko.github.com/shocco/>
