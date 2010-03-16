@@ -41,9 +41,6 @@ shocco.html: shocco
 	./shocco shocco.sh > shocco.html+
 	mv shocco.html+ shocco.html
 
-index.html: shocco.html
-	cp -p shocco.html index.html
-
 install-markdown:
 	test -f shocco
 	mkdir -p "$(bindir)"
