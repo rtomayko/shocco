@@ -20,6 +20,13 @@
      cd shocco    &&      make      &&    make install  )
 
 
+                         R U N
+
+
+                      shocco --help
+    shocco yourgreatscript.sh > yourgreatscript.sh.html
+
+
                         M O R E
 
 
@@ -34,6 +41,7 @@
 
 
                      C O P Y I N G
+
 
           This is MIT licensed Free Software
 
