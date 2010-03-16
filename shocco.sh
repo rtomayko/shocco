@@ -222,18 +222,18 @@ $MARKDOWN                                    |
 # the code blocks.
 
 # Get another pipeline going on our performatted input file.
-cat raw |
+cat raw                                     |
 
 # Replace DOCS lines with blank lines.
-sed 's/^DOCS.*//' |
+sed 's/^DOCS.*//'                           |
 
 # Squeeze multiple blank lines into a single blank line.
-cat -s |
+cat -s                                      |
 
 # Replace blank lines with a DIVIDER marker and remove prefix from CODE lines.
 sed '
     s/^$/# DIVIDER/
-    s/^CODE //' |
+    s/^CODE //'                             |
 
 # Now pass the code through pygments for syntax highlighting. We tell it the
 # the input is `sh` and that we want HTML output.
@@ -243,7 +243,7 @@ $PYGMENTIZE -l sh -f html                   |
 # these back in at each section when we build the output document.
 sed '
     s/<div class="highlight"><pre>//
-    s/^<\/pre><\/div>//'  |
+    s/^<\/pre><\/div>//'                    |
 
 # Again with the `csplit(1)`. Each code section is written to a separate
 # file, this time with a `codeXXX` prefix. There should be the same number
@@ -270,7 +270,7 @@ sed '
 # [ja]: http://github.com/jashkenas/
 # [do]: http://jashkenas.github.com/docco/
 layout () {
-    local title="$1"
+    title="$1"
     cat <<HTML
 <!DOCTYPE html>
 <html>
@@ -311,7 +311,7 @@ HTML
 
 # Start the pipeline with a simple list of split out temp filename. One file
 # per line.
-ls -1 docs[0-9]* code[0-9]* |
+ls -1 docs[0-9]* code[0-9]* 2>/dev/null      |
 
 # Now sort the list of files by the *number* first and then by the type. The
 # list will look something like this when `sort(1)` is done with it:
@@ -324,7 +324,7 @@ ls -1 docs[0-9]* code[0-9]* |
 #     code0002
 #     ...
 #
-sort -n -k1.5 -k1.1r        |
+sort -n -k1.5 -k1.1r                         |
 
 # And if we pass those files to `cat(1)` in that order, it concatenates them
 # in exactly the way we need. `xargs(1)` reads from `stdin` and passes each
@@ -336,7 +336,7 @@ sort -n -k1.5 -k1.1r        |
 #
 # I like to keep things to a simple flat pipeline when possible, hence the
 # `xargs` approach.
-xargs cat                   |
+xargs cat                                    |
 
 
 # Run a quick substitution on the embedded dividers to turn them into table
@@ -345,7 +345,7 @@ xargs cat                   |
 sed '
     s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
     s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
-    '                       |
+    '                                        |
 
 # Pipe our recombined HTML into the layout and let it write the result to
 # `stdout`.
