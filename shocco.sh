@@ -144,8 +144,60 @@ trap "rm -rf $WORK" 0
 #
 # Generally speaking, I like to avoid temp files but the two-pass formatting
 # logic makes that hard in this case. We may be reading from `stdin` or a
-# fifo, so we don't want to assume _input_ can be read more than once.
-cat "$1"                               |
+# fifo, so we don't want to assume `<source>` can be read more than once.
+cat "$file"                                  |
+
+# We want the shebang line and any code preceding the first comment to
+# appear as the first code block. This inverts the normal flow of things.
+# Usually, we have comment text followed by code; in this case, we have
+# code followed by comment text.
+#
+# Read the first code and docs headers and flip them so the first docs block
+# comes before the first code block.
+(
+    lineno=0
+    codebuf=;codehead=
+    docsbuf=;docshead=
+    while read -r line
+    do
+        # Issue a warning if the first line of the script is not a shebang
+        # line. This can screw things up and wreck our attempt at
+        # flip-flopping the two headings.
+        lineno=$(( $lineno + 1 ))
+        test $lineno = 1 && ! expr "$line" : "#!.*" >/dev/null &&
+        echo "$(basename $0): $(file):1 [warn] shebang! line missing." 1>&2
+
+        # Accumulate comment lines into `$docsbuf` and code lines into
+        # `$codebuf`. Only lines matching `/#(?: |$)/` are considered doc
+        # lines.
+        if expr "$line" : '# ' >/dev/null || test "$line" = "#"
+        then docsbuf="$docsbuf$line
+"
+        else codebuf="$codebuf$line
+"
+        fi
+
+        # If we have stuff in both `$docsbuf` and `$codebuf`, it means
+        # we're at some kind of boundary. If `$codehead` isn't set, we're at
+        # the first comment/doc line, so store the buffer to `$codehead` and
+        # keep going. If `$codehead` *is* set, we've crossed into another code
+        # block and are ready to output both blocks and then straight pipe
+        # everything by `exec`'ing `cat`.
+        if test -n "$docsbuf" -a -n "$codebuf"
+        then
+            if test -n "$codehead"
+            then docshead="$docsbuf"
+                 docsbuf=""
+                 echo "$docshead"
+                 echo "$codehead"
+                 echo "$line"
+                 exec cat
+            else codehead="$codebuf"
+                 codebuf=
+            fi
+        fi
+    done
+)                                            |
 
 # Remove comment leader text from all comment lines. Then prefix all
 # comment lines with "DOCS" and interpreted / code lines with "CODE".
@@ -154,7 +206,7 @@ cat "$1"                               |
 #
 #     CODE #!/bin/sh
 #     CODE #/ Usage: schocco <file>
-#     DOCS Docco for and in POSIX sh.
+#     DOCS Docco for and in POSIX shell.
 #     CODE
 #     CODE PATH="/bin:/usr/bin"
 #     CODE
@@ -266,10 +318,11 @@ sed '
 # file, this time with a `codeXXX` prefix. There should be the same number
 # of `codeXXX` files as there are `docsXXX` files.
 (
-    csplit -sk                                                         \
-           -f code                                                     \
-           -n 4 -                                                      \
-           '%# DIVIDER%' '/<span class="c"># DIVIDER</span>/' '{9999}' \
+    DIVIDER='/<span class="c"># DIVIDER</span>/'
+    csplit -sk                   \
+           -f code               \
+           -n 4 -                \
+           "$DIVIDER" '{9999}'   \
            2>/dev/null ||
     true
 )
@@ -306,9 +359,7 @@ layout () {
       </tr>
     </thead>
     <tbody>
-        <tr style=display:none><td><div><pre>
-        $(cat)
-        </pre></div></td></tr>
+        <tr><td class='docs'>$(cat)</pre></div></td></tr>
     </tbody>
     </table>
 </div>
@@ -358,10 +409,23 @@ xargs cat                                    |
 # Run a quick substitution on the embedded dividers to turn them into table
 # rows and cells. This also wraps each code block in a `<div class=highlight>`
 # so that the CSS kicks in properly.
-sed '
-    s/<h5>DIVIDER<\/h5>/<\/pre><\/div><\/td><\/tr><tr><td class=docs>/
-    s/<span class="c"># DIVIDER<\/span>/<\/td><td class=code><div class=highlight><pre>/
-    '                                        |
+{
+    DOCSDIVIDER='<h5>DIVIDER</h5>'
+    DOCSREPLACE='</pre></div></td></tr><tr><td class=docs>'
+    CODEDIVIDER='<span class="c"># DIVIDER</span>'
+    CODEREPLACE='</td><td class=code><div class=highlight><pre>'
+    sed "
+        s@${DOCSDIVIDER}@${DOCSREPLACE}@
+        s@${CODEDIVIDER}@${CODEREPLACE}@
+    "
+}                                            |
+
+
+# Strip newlines from the opening `<pre>` blocks. We accidentally insert
+# these as part of the split/recombine processing.
+#
+# **TODO:** avoid `perl`. try to use POSIX features.
+perl -pe 's/<pre>\n/<pre>/m'                 |
 
 # Pipe our recombined HTML into the layout and let it write the result to
 # `stdout`.
