@@ -213,19 +213,14 @@ cat "$file"                                  |
 #     DOCS Start by numbering all lines in the input file...
 #     ...
 #
+# Once we pass through `sed`, save this off in our work directory so
+# we can take a few passes over it.
 sed -n '
     s/^/:/
     s/^: \{0,\}# /DOCS /p
     s/^: \{0,\}#$/DOCS /p
     s/^:/CODE /p
-'                                      |
-
-
-# Write the result out to a temp file. We'll take two passes over it: one
-# to extract and format the documentation comments and another to extract
-# and syntax highlight the source code.
-cat > "$WORK/raw"
-
+' > "$WORK/raw"
 
 # Now that we've read and formatted our input file for further parsing,
 # change into the work directory. The program will finish up in there.
@@ -235,12 +230,10 @@ cd "$WORK"
 # ------------------------------
 
 # Start a pipeline going on our preformatted input.
-cat raw                                      |
-
 # Replace all CODE lines with entirely blank lines. We're not interested
 # in code right now, other than knowing where comments end and code begins
 # and code begins and comments end.
-sed 's/^CODE.*//'                            |
+sed 's/^CODE.*//' < raw                      |
 
 # Now squeeze multiple blank lines into a single blank line.
 #
@@ -272,8 +265,8 @@ $MARKDOWN                                    |
 # Now this where shit starts to get a little crazy. We use `csplit(1)` to
 # split the HTML into a bunch of individual files. The files are named
 # as `docs0000`, `docs0001`, `docs0002`, ... Each file includes a single
-# *section*. These files will sit here while we take a similar pass over the
-# source code.
+# doc *section*. These files will sit here while we take a similar pass over
+# the source code.
 (
     csplit -sk                               \
            -f docs                           \
@@ -291,21 +284,20 @@ $MARKDOWN                                    |
 # the code blocks.
 
 # Get another pipeline going on our performatted input file.
-cat raw                                     |
-
 # Replace DOCS lines with blank lines.
-sed 's/^DOCS.*//'                           |
+sed 's/^DOCS.*//' < raw                     |
 
 # Squeeze multiple blank lines into a single blank line.
 cat -s                                      |
 
-# Replace blank lines with a DIVIDER marker and remove prefix from CODE lines.
+# Replace blank lines with a `DIVIDER` marker and remove prefix
+# from `CODE` lines.
 sed '
     s/^$/# DIVIDER/
     s/^CODE //'                             |
 
-# Now pass the code through pygments for syntax highlighting. We tell it the
-# the input is `sh` and that we want HTML output.
+# Now pass the code through `pygmentize` for syntax highlighting. We tell it
+# the the input is `sh` and that we want HTML output.
 $PYGMENTIZE -l sh -f html                   |
 
 # Post filter the pygments output to remove partial `<pre>` blocks. We add
