@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 # Markdown -- A text-to-HTML conversion tool for web writers
 #
 # Copyright (c) 2004 John Gruber
