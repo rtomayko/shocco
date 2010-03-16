@@ -41,20 +41,32 @@ set -e
 # padded with a space are considered documentation. A `#` followed by any
 # other character is considered code.
 #
-#/ Usage: shocco [<input>]
+#/ Usage: shocco [-t <title>] [<source>]
 #/ Create literate-programming-style documentation for shell scripts.
 #/
-#/ The shocco program reads a shell script from <input> and writes
-#/ generated documentation in HTML format to stdout. When <input> is
+#/ The shocco program reads a shell script from <source> and writes
+#/ generated documentation in HTML format to stdout. When <source> is
 #/ '-' or not specified, shocco reads from stdin.
 
 # This is the second part of the usage message technique: `grep` yourself
 # for the usage message comment prefix and then cut off the first few
 # characters so that everything lines up.
-test "$1" = "--help" && {
+expr "$*" : "--help" >/dev/null && {
     grep '^#/' <"$0" | cut -c4-
     exit 0
 }
+
+# A custom title may be specified with the `-t` option. We use the filename
+# as the title if none is given.
+test "$1" = '-t' && {
+    title="$2"
+    shift;shift
+}
+
+# Next argument should be the `<source>` file. Grab it, and use its basename
+# as the title if none was given with the `-t` option.
+file="$1"
+: ${title:-$(basename "$file")}
 
 # These are replaced with the full paths to real utilities by the
 # configure/make system. If they're
@@ -71,10 +83,8 @@ PYGMENTIZE='@@PYGMENTIZE@@'
 command -v "$MARKDOWN" >/dev/null || {
     if command -v Markdown.pl >/dev/null
     then alias markdown='Markdown.pl'
-
     elif test -f "$(dirname $0)/Markdown.pl"
     then alias markdown="perl $(dirname $0)/Markdown.pl"
-
     else echo "$(basename $0): markdown command not found." 1>&2
          exit 1
     fi
@@ -270,13 +280,12 @@ sed '
 # [ja]: http://github.com/jashkenas/
 # [do]: http://jashkenas.github.com/docco/
 layout () {
-    title="$1"
     cat <<HTML
 <!DOCTYPE html>
 <html>
 <head>
     <meta http-eqiv='content-type' content='text/html;charset=utf-8'>
-    <title>${title}</title>
+    <title>$1</title>
     <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
 </head>
 <body>
@@ -285,7 +294,7 @@ layout () {
     <table cellspacing=0 cellpadding=0>
     <thead>
       <tr>
-        <th class=docs><h1>${title}</h1></th>
+        <th class=docs><h1>$1</h1></th>
         <th class=code></th>
       </tr>
     </thead>
@@ -349,7 +358,7 @@ sed '
 
 # Pipe our recombined HTML into the layout and let it write the result to
 # `stdout`.
-layout "$(basename $1)"
+layout "$title"
 
 # More
 # ----
