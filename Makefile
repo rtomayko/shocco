@@ -1,33 +1,41 @@
 .POSIX:
+SHELL = /bin/sh
 
 # The default target ...
 all::
 
-SHELL = /bin/sh
-PREFIX = /usr/local
-BINDIR = $(PREFIX)/bin
-SOURCEDIR = .
+config.mk:
+	@echo "Please run ./configure before running make"
+	exit 1
 
+include config.mk
+
+sourcedir = .
 PROGRAMS = shocco
 DOCS = shocco.html index.html
-BROWSER = $(shell for c in xdg-open open firefox;do command -v $$c && break;done)
+DISTFILES = config.mk config.sh
 
 all:: sup build
 
 sup:
-	@cat README | head -8
-
-build: shocco shocco.html
 	echo "==========================================================="
-	echo "shocco built at \`$(SOURCEDIR)/shocco' ..."
-	echo "run \`make install' to install under $(BINDIR) ..."
-	echo "or, just copy the \`$(SOURCEDIR)/shocco' file where you need it."
+	head -8 < README
+	echo "==========================================================="
+
+build: shocco
+	echo "shocco built at \`$(sourcedir)/shocco' ..."
+	echo "run \`make install' to install under $(bindir) ..."
+	echo "or, just copy the \`$(sourcedir)/shocco' file where you need it."
 
 shocco: shocco.sh
-	@echo "==========================================================="
 	$(SHELL) -n shocco.sh
-	cp shocco.sh shocco
+	sed -e 's|@@MARKDOWN@@|$(MARKDOWN)|g' \
+	    -e 's|@@PYGMENTIZE@@|$(PYGMENTIZE)|g' \
+	< shocco.sh > shocco+
+	mv shocco+ shocco
 	chmod 0755 shocco
+
+doc: shocco.html
 
 shocco.html: shocco
 	./shocco shocco.sh > shocco.html+
@@ -36,18 +44,27 @@ shocco.html: shocco
 index.html: shocco.html
 	cp -p shocco.html index.html
 
-install:
+install-markdown:
 	test -f shocco
-	mkdir -p $(BINDIR)
-	cp shocco $(BINDIR)/shocco
-	chmod 0755 $(BINDIR)/shocco
+	mkdir -p "$(bindir)"
+	cp Markdown.pl "$(bindir)/markdown"
+	chmod 0755 "$(bindir)/markdown"
 
-read: sup shocco.html
+install: $(INSTALL_PREREQUISITES)
+	test -f shocco
+	mkdir -p "$(bindir)"
+	cp shocco "$(bindir)/shocco"
+	chmod 0755 $(bindir)/shocco
+
+read: sup doc
 	$(BROWSER) ./shocco.html
 
 clean:
 	rm -f $(PROGRAMS) $(DOCS)
 
+distclean: clean
+	rm -f $(DISTFILES)
+
 .SUFFIXES:
 
-.SILENT: build
+.SILENT: build sup shocco

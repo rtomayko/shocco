@@ -56,6 +56,11 @@ test "$1" = "--help" && {
     exit 0
 }
 
+# These are replaced with the full paths to real utilities by the
+# configure/make system. If they're
+MARKDOWN='@@MARKDOWN@@'
+PYGMENTIZE='@@PYGMENTIZE@@'
+
 # We're going to need a `markdown` command to run comments through. This can
 # be [Gruber's `Markdown.pl`][md] (included in the shocco distribution) or
 # Discount's super fast `markdown(1)` in C. Try to figure out if either are
@@ -63,7 +68,7 @@ test "$1" = "--help" && {
 #
 # [md]: http://daringfireball.net/projects/markdown/
 # [ds]: http://www.pell.portland.or.us/~orc/Code/discount/
-command -v markdown >/dev/null || {
+command -v "$MARKDOWN" >/dev/null || {
     if command -v Markdown.pl >/dev/null
     then alias markdown='Markdown.pl'
 
@@ -82,7 +87,7 @@ command -v markdown >/dev/null || {
 # now, just bail out if we can't find the `pygmentize` program.
 #
 # [py]: http://pygments.org/
-command -v pygmentize >/dev/null || {
+command -v "$PYGMENTIZE" >/dev/null || {
     echo "$(basename $0): pygmentize command not found." 1>&2
     exit 1
 }
@@ -193,7 +198,7 @@ sed '
 
 # The current stream text is suitable for input to `markdown(1)`. It takes
 # our doc text with embedded `DIVIDER`s and outputs HTML.
-markdown                                     |
+$MARKDOWN                                    |
 
 # Now this where shit starts to get a little crazy. We use `csplit(1)` to
 # split the HTML into a bunch of individual files. The files are named
@@ -232,7 +237,7 @@ sed '
 
 # Now pass the code through pygments for syntax highlighting. We tell it the
 # the input is `sh` and that we want HTML output.
-pygmentize -l sh -f html |
+$PYGMENTIZE -l sh -f html                   |
 
 # Post filter the pygments output to remove partial `<pre>` blocks. We add
 # these back in at each section when we build the output document.
