@@ -115,13 +115,20 @@ command -v "$PYGMENTIZE" >/dev/null || {
 : ${WORK:=$(
       if command -v mktemp 1>/dev/null 2>&1
       then
-          mktemp -dt $(basename $0)
+          mktemp -dt "$(basename $0)"
       else
           dir="$TMPDIR/$(basename $0).$$"
           mkdir "$dir"
           echo "$dir"
       fi
   )}
+
+# We want to be absolutely sure we're not going to do something stupid like
+# use `.` or `/` as a work dir. Better safe than sorry.
+test -z "$WORK" -o "$WORK" = '/' && {
+    echo "$(basename $0): could not create a temp work dir."
+    exit 1
+}
 
 # We're about to create a ton of shit under our `$WORK` directory. Register
 # an `EXIT` trap that cleans everything up. This guarantees we don't leave
