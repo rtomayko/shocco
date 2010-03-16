@@ -66,10 +66,10 @@ test "$1" = '-t' && {
 # Next argument should be the `<source>` file. Grab it, and use its basename
 # as the title if none was given with the `-t` option.
 file="$1"
-: ${title:-$(basename "$file")}
+: ${title:=$(basename "$file")}
 
 # These are replaced with the full paths to real utilities by the
-# configure/make system. If they're
+# configure/make system.
 MARKDOWN='@@MARKDOWN@@'
 PYGMENTIZE='@@PYGMENTIZE@@'
 
