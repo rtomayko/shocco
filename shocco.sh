@@ -51,7 +51,7 @@ set -e
 # This is the second part of the usage message technique: `grep` yourself
 # for the usage message comment prefix and then cut off the first few
 # characters so that everything lines up.
-expr "$*" : ".*--help" >/dev/null && {
+expr -- "$*" : ".*--help" >/dev/null && {
     grep '^#/' <"$0" | cut -c4-
     exit 0
 }
