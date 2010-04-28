@@ -195,7 +195,7 @@ fi
 stdutil ronn       RONN       ronn
 stdutil markdown   MARKDOWN   markdown Markdown.pl
 stdutil perl       PERL       perl
-stdutil pygmentize PYGMENTIZE pygmentize
+stdutil pygmentize PYGMENTIZE pygmentize $PYGMENTIZE
 
 set -e
 
