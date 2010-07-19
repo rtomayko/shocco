@@ -10,7 +10,7 @@
 #
 # shocco is built with `make(1)` and installs under `/usr/local` by default:
 #
-#     git clone git://github.com/rtomayko/schocco.git
+#     git clone git://github.com/rtomayko/shocco.git
 #     cd schocco
 #     make
 #     sudo make install
