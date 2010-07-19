@@ -202,7 +202,7 @@ set -e
 eval "$SHCONFIG"
 
 test -z "$RONN" &&
-    warn "warn: ronn is not installed. cannot rebuilt manpages. no biggie."
+    warn "warn: ronn is not installed. cannot rebuild manpages. no biggie."
 
 test -z "$MARKDOWN" && {
      warn "warn: no markdown found on PATH. installing Gruber's with shocco."
