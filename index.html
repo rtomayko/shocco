@@ -27,8 +27,8 @@ page is the result of running <code>shocco</code> against <a href="https://githu
 
 <p>shocco is built with <code>make(1)</code> and installs under <code>/usr/local</code> by default:</p>
 
-<pre><code>git clone git://github.com/rtomayko/schocco.git
-cd schocco
+<pre><code>git clone git://github.com/rtomayko/shocco.git
+cd shocco
 make
 sudo make install
 # or just copy 'shocco' wherever you need it
@@ -60,12 +60,12 @@ for a shell script:</p>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>There's a lot of different ways to do usage messages in shell scripts.
-This is my favorite: you write the usage message in a comment --
-typically right after the shebang line -- <em>BUT</em>, use a special comment prefix
+<p>There&rsquo;s a lot of different ways to do usage messages in shell scripts.
+This is my favorite: you write the usage message in a comment &mdash;
+typically right after the shebang line &mdash; <em>BUT</em>, use a special comment prefix
 like <code>#/</code> so that its easy to pull these lines out.</p>
 
-<p>This also illustrates one of shocco's corner features. Only comment lines
+<p>This also illustrates one of shocco&rsquo;s corner features. Only comment lines
 padded with a space are considered documentation. A <code>#</code> followed by any
 other character is considered code.</p>
 
@@ -84,7 +84,7 @@ for the usage message comment prefix and then cut off the first few
 characters so that everything lines up.</p>
 
 </td><td class=code><div class=highlight><pre>
-expr <span class="s2">&quot;$*&quot;</span> : <span class="s2">&quot;.*--help&quot;</span> &gt;/dev/null <span class="o">&amp;&amp;</span> <span class="o">{</span>
+expr -- <span class="s2">&quot;$*&quot;</span> : <span class="s2">&quot;.*--help&quot;</span> &gt;/dev/null <span class="o">&amp;&amp;</span> <span class="o">{</span>
     grep <span class="s1">&#39;^#/&#39;</span> &lt;<span class="s2">&quot;$0&quot;</span> | cut -c4-
     <span class="nb">exit </span>0
 <span class="o">}</span>
@@ -120,10 +120,10 @@ configure/make system.</p>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>We're going to need a <code>markdown</code> command to run comments through. This can
-be <a href="http://daringfireball.net/projects/markdown/">Gruber's <code>Markdown.pl</code></a> (included in the shocco distribution) or
-Discount's super fast <code>markdown(1)</code> in C. Try to figure out if either are
-available and then bail if we can't find anything.</p>
+<p>We&rsquo;re going to need a <code>markdown</code> command to run comments through. This can
+be <a href="http://daringfireball.net/projects/markdown/">Gruber&rsquo;s <code>Markdown.pl</code></a> (included in the shocco distribution) or
+Discount&rsquo;s super fast <code>markdown(1)</code> in C. Try to figure out if either are
+available and then bail if we can&rsquo;t find anything.</p>
 
 </td><td class=code><div class=highlight><pre>
 <span class="nb">command</span> -v <span class="s2">&quot;$MARKDOWN&quot;</span> &gt;/dev/null <span class="o">||</span> <span class="o">{</span>
@@ -140,9 +140,9 @@ available and then bail if we can't find anything.</p>
 
 <p>Check that <a href="http://pygments.org/">Pygments</a> is installed for syntax highlighting.</p>
 
-<p>This is a fairly hefty prerequisite. Eventually, I'd like to fallback
-on a simple non-highlighting preformatter when Pygments isn't available. For
-now, just bail out if we can't find the <code>pygmentize</code> program.</p>
+<p>This is a fairly hefty prerequisite. Eventually, I&rsquo;d like to fallback
+on a simple non-highlighting preformatter when Pygments isn&rsquo;t available. For
+now, just bail out if we can&rsquo;t find the <code>pygmentize</code> program.</p>
 
 </td><td class=code><div class=highlight><pre>
 <span class="nb">command</span> -v <span class="s2">&quot;$PYGMENTIZE&quot;</span> &gt;/dev/null <span class="o">||</span> <span class="o">{</span>
@@ -168,13 +168,13 @@ the value if <code>TMPDIR</code> is unset or null.</p>
 
 <p>Create a temporary directory for doing work. Use <code>mktemp(1)</code> if
 available; but, since <code>mktemp(1)</code> is not POSIX specified, fallback on naive
-(and insecure) temp dir generation using the program's basename and pid.</p>
+(and insecure) temp dir generation using the program&rsquo;s basename and pid.</p>
 
 </td><td class=code><div class=highlight><pre>
 : <span class="k">${</span><span class="nv">WORK</span><span class="p">:=</span><span class="k">$(</span>
       <span class="k">if </span><span class="nb">command</span> -v mktemp 1&gt;/dev/null 2&gt;&amp;1
       <span class="k">then</span>
-<span class="k">          </span>mktemp -dt <span class="s2">&quot;$(basename $0)&quot;</span>
+<span class="k">          </span>mktemp -d <span class="s2">&quot;$TMPDIR/$(basename $0).XXXXXXXXXX&quot;</span>
       <span class="k">else</span>
 <span class="k">          </span><span class="nv">dir</span><span class="o">=</span><span class="s2">&quot;$TMPDIR/$(basename $0).$$&quot;</span>
           mkdir <span class="s2">&quot;$dir&quot;</span>
@@ -184,7 +184,7 @@ available; but, since <code>mktemp(1)</code> is not POSIX specified, fallback on
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>We want to be absolutely sure we're not going to do something stupid like
+<p>We want to be absolutely sure we&rsquo;re not going to do something stupid like
 use <code>.</code> or <code>/</code> as a work dir. Better safe than sorry.</p>
 
 </td><td class=code><div class=highlight><pre>
@@ -195,9 +195,9 @@ use <code>.</code> or <code>/</code> as a work dir. Better safe than sorry.</p>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>We're about to create a ton of shit under our <code>$WORK</code> directory. Register
-an <code>EXIT</code> trap that cleans everything up. This guarantees we don't leave
-anything hanging around unless we're killed with a <code>SIGKILL</code>.</p>
+<p>We&rsquo;re about to create a ton of shit under our <code>$WORK</code> directory. Register
+an <code>EXIT</code> trap that cleans everything up. This guarantees we don&rsquo;t leave
+anything hanging around unless we&rsquo;re killed with a <code>SIGKILL</code>.</p>
 
 </td><td class=code><div class=highlight><pre>
 <span class="nb">trap</span> <span class="s2">&quot;rm -rf $WORK&quot;</span> 0
@@ -267,11 +267,11 @@ lines.</p>
 </pre></div></td></tr><tr><td class=docs>
 
 <p>If we have stuff in both <code>$docsbuf</code> and <code>$codebuf</code>, it means
-we're at some kind of boundary. If <code>$codehead</code> isn't set, we're at
+we&rsquo;re at some kind of boundary. If <code>$codehead</code> isn&rsquo;t set, we&rsquo;re at
 the first comment/doc line, so store the buffer to <code>$codehead</code> and
-keep going. If <code>$codehead</code> <em>is</em> set, we've crossed into another code
+keep going. If <code>$codehead</code> <em>is</em> set, we&rsquo;ve crossed into another code
 block and are ready to output both blocks and then straight pipe
-everything by <code>exec</code>'ing <code>cat</code>.</p>
+everything by <code>exec</code>&lsquo;ing <code>cat</code>.</p>
 
 </td><td class=code><div class=highlight><pre>
         <span class="k">if </span><span class="nb">test</span> -n <span class="s2">&quot;$docsbuf&quot;</span> -a -n <span class="s2">&quot;$codebuf&quot;</span>
@@ -303,12 +303,12 @@ docsbuf or a fake comment and then the codebuf or codehead.</p>
 </pre></div></td></tr><tr><td class=docs>
 
 <p>Remove comment leader text from all comment lines. Then prefix all
-comment lines with "DOCS" and interpreted / code lines with "CODE".
+comment lines with &ldquo;DOCS&rdquo; and interpreted / code lines with &ldquo;CODE&rdquo;.
 The stream text might look like this after moving through the <code>sed</code>
 filters:</p>
 
 <pre><code>CODE #!/bin/sh
-CODE #/ Usage: schocco &lt;file&gt;
+CODE #/ Usage: shocco &lt;file&gt;
 DOCS Docco for and in POSIX shell.
 CODE
 CODE PATH="/bin:/usr/bin"
@@ -330,7 +330,7 @@ sed -n <span class="s1">&#39;</span>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Now that we've read and formatted our input file for further parsing,
+<p>Now that we&rsquo;ve read and formatted our input file for further parsing,
 change into the work directory. The program will finish up in there.</p>
 
 </td><td class=code><div class=highlight><pre>
@@ -345,7 +345,7 @@ change into the work directory. The program will finish up in there.</p>
 </pre></div></td></tr><tr><td class=docs>
 
 <p>Start a pipeline going on our preformatted input.
-Replace all CODE lines with entirely blank lines. We're not interested
+Replace all CODE lines with entirely blank lines. We&rsquo;re not interested
 in code right now, other than knowing where comments end and code begins
 and code begins and comments end.</p>
 
@@ -356,7 +356,7 @@ sed <span class="s1">&#39;s/^CODE.*//&#39;</span> &lt; raw                      
 
 <p>Now squeeze multiple blank lines into a single blank line.</p>
 
-<p><strong>TODO:</strong> <code>cat -s</code> is not POSIX and doesn't squeeze lines on BSD. Use
+<p><strong>TODO:</strong> <code>cat -s</code> is not POSIX and doesn&rsquo;t squeeze lines on BSD. Use
 the sed line squeezing code mentioned in the POSIX <code>cat(1)</code> manual page
 instead.</p>
 
@@ -376,7 +376,7 @@ DOCS ------------------------------
 </code></pre>
 
 <p>Blank lines represent code segments. We want to replace all blank lines
-with a dividing marker and remove the "DOCS" prefix from docs lines.</p>
+with a dividing marker and remove the &ldquo;DOCS&rdquo; prefix from docs lines.</p>
 
 </td><td class=code><div class=highlight><pre>
 sed <span class="s1">&#39;</span>
@@ -395,7 +395,7 @@ our doc text with embedded <code>DIVIDER</code>s and outputs HTML.</p>
 
 <p>Now this where shit starts to get a little crazy. We use <code>csplit(1)</code> to
 split the HTML into a bunch of individual files. The files are named
-as <code>docs0000</code>, <code>docs0001</code>, <code>docs0002</code>, ... Each file includes a single
+as <code>docs0000</code>, <code>docs0001</code>, <code>docs0002</code>, &hellip; Each file includes a single
 doc <em>section</em>. These files will sit here while we take a similar pass over
 the source code.</p>
 
@@ -414,7 +414,7 @@ the source code.</p>
 
 <h2>Second Pass: Code Formatting</h2>
 
-<p>This is exactly like the first pass but we're focusing on code instead of
+<p>This is exactly like the first pass but we&rsquo;re focusing on code instead of
 comments. We use the same basic technique to separate the two and isolate
 the code blocks.</p>
 
@@ -496,7 +496,7 @@ files for each code section.</p>
 </pre></div></td></tr><tr><td class=docs>
 
 <p>Create a function for apply the standard <a href="http://jashkenas.github.com/docco/">Docco</a> HTML layout, using
-<a href="http://github.com/jashkenas/">jashkenas</a>'s gorgeous CSS for styles. Wrapping the layout in a function
+<a href="http://github.com/jashkenas/">jashkenas</a>&rsquo;s gorgeous CSS for styles. Wrapping the layout in a function
 lets us apply it elsewhere simply by piping in a body.</p>
 
 </td><td class=code><div class=highlight><pre>
@@ -538,8 +538,8 @@ layout <span class="o">()</span> <span class="o">{</span>
 </pre></div></td></tr><tr><td class=docs>
 
 <p>Alright, we have separate files for each docs section and separate
-files for each code section. We've defined a function to wrap the
-results in the standard layout. All that's left to do now is put
+files for each code section. We&rsquo;ve defined a function to wrap the
+results in the standard layout. All that&rsquo;s left to do now is put
 everything back together.</p>
 
 </td><td class=code><div class=highlight><pre>
@@ -621,12 +621,13 @@ layout <span class="s2">&quot;$title&quot;</span>
 literate-programming-style documentation generators:</p>
 
 <ul>
-<li><a href="http://jashkenas.github.com/docco/">Docco</a> - The original. Written in CoffeeScript and generates
+<li><a href="http://jashkenas.github.com/docco/">Docco</a> &ndash; The original. Written in CoffeeScript and generates
 documentation for CoffeeScript, JavaScript, and Ruby.</li>
-<li><a href="http://rtomayko.github.com/rocco/">Rocco</a> - A port of Docco to Ruby.</li>
+<li><a href="http://rtomayko.github.com/rocco/">Rocco</a> &ndash; A port of Docco to Ruby.</li>
 </ul>
 
-<p>If you like this sort of thing, you may also find interesting Knuth's
+
+<p>If you like this sort of thing, you may also find interesting Knuth&rsquo;s
 massive body of work on literate programming:</p>
 
 <ul>
@@ -634,11 +635,12 @@ massive body of work on literate programming:</p>
 <li><a href="http://en.wikipedia.org/wiki/Literate_programming">Literate Programming on Wikipedia</a></li>
 </ul>
 
+
 </td><td class=code><div class=highlight><pre>
 
 </pre></div></td></tr><tr><td class=docs>
 
-<p>Copyright (C) <a href="http://tomayko.com/about">Ryan Tomayko <tomayko.com/about></a><br>
+<p>Copyright &copy; <a href="http://tomayko.com/about">Ryan Tomayko &lt;tomayko.com/about></a><br>
 This is Free Software distributed under the MIT license.</p>
 
 </td><td class=code><div class=highlight><pre>
