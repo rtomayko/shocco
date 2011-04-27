@@ -115,7 +115,7 @@ command -v "$PYGMENTIZE" >/dev/null || {
 : ${WORK:=$(
       if command -v mktemp 1>/dev/null 2>&1
       then
-          mktemp -dt "$(basename $0)"
+          mktemp -d "$TMPDIR/$(basename $0).XXXXXXXXXX"
       else
           dir="$TMPDIR/$(basename $0).$$"
           mkdir "$dir"
