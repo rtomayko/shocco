@@ -11,7 +11,7 @@
 # shocco is built with `make(1)` and installs under `/usr/local` by default:
 #
 #     git clone git://github.com/rtomayko/shocco.git
-#     cd schocco
+#     cd shocco
 #     make
 #     sudo make install
 #     # or just copy 'shocco' wherever you need it
@@ -212,7 +212,7 @@ trap "rm -rf $WORK" 0
 # filters:
 #
 #     CODE #!/bin/sh
-#     CODE #/ Usage: schocco <file>
+#     CODE #/ Usage: shocco <file>
 #     DOCS Docco for and in POSIX shell.
 #     CODE
 #     CODE PATH="/bin:/usr/bin"
