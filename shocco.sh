@@ -224,8 +224,8 @@ trap "rm -rf $WORK" 0
 # we can take a few passes over it.
 sed -n '
     s/^/:/
-    s/^: \{0,\}# /DOCS /p
-    s/^: \{0,\}#$/DOCS /p
+    s/^:[ 	]\{0,\}# /DOCS /p
+    s/^:[ 	]\{0,\}#$/DOCS /p
     s/^:/CODE /p
 ' > "$WORK/raw"
 
