@@ -305,7 +305,7 @@ sed '
 
 # Now pass the code through `pygmentize` for syntax highlighting. We tell it
 # the the input is `sh` and that we want HTML output.
-$PYGMENTIZE -l sh -f html                   |
+$PYGMENTIZE -l sh -f html -O encoding=utf8  |
 
 # Post filter the pygments output to remove partial `<pre>` blocks. We add
 # these back in at each section when we build the output document.
