@@ -73,6 +73,9 @@ file="$1"
 MARKDOWN='@@MARKDOWN@@'
 PYGMENTIZE='@@PYGMENTIZE@@'
 
+# On GNU systems, csplit doesn't elide empty files by default:
+CSPLITARGS=$( (csplit --version 2>/dev/null | grep -i gnu >/dev/null) && echo "--elide-empty-files" )
+
 # We're going to need a `markdown` command to run comments through. This can
 # be [Gruber's `Markdown.pl`][md] (included in the shocco distribution) or
 # Discount's super fast `markdown(1)` in C. Try to figure out if either are
@@ -275,6 +278,7 @@ $MARKDOWN                                    |
 # the source code.
 (
     csplit -sk                               \
+           $CSPLITARGS                       \
            -f docs                           \
            -n 4                              \
            - '/<h5>DIVIDER<\/h5>/' '{9999}'  \
@@ -319,6 +323,7 @@ sed '
 (
     DIVIDER='/<span class="c"># DIVIDER</span>/'
     csplit -sk                   \
+           $CSPLITARGS           \
            -f code               \
            -n 4 -                \
            "$DIVIDER" '{9999}'   \
