@@ -224,8 +224,8 @@ trap "rm -rf $WORK" 0
 # we can take a few passes over it.
 sed -n '
     s/^/:/
-    s/^: \{0,\}# /DOCS /p
-    s/^: \{0,\}#$/DOCS /p
+    s/^:[ 	]\{0,\}# /DOCS /p
+    s/^:[ 	]\{0,\}#$/DOCS /p
     s/^:/CODE /p
 ' > "$WORK/raw"
 
@@ -305,7 +305,7 @@ sed '
 
 # Now pass the code through `pygmentize` for syntax highlighting. We tell it
 # the the input is `sh` and that we want HTML output.
-$PYGMENTIZE -l sh -f html                   |
+$PYGMENTIZE -l sh -f html -O encoding=utf8  |
 
 # Post filter the pygments output to remove partial `<pre>` blocks. We add
 # these back in at each section when we build the output document.
