@@ -74,7 +74,7 @@ MARKDOWN='@@MARKDOWN@@'
 PYGMENTIZE='@@PYGMENTIZE@@'
 
 # On GNU systems, csplit doesn't elide empty files by default:
-CSPLITARGS=$( (csplit --version 2>/dev/null | grep -i gnu >/dev/null) && echo "--elide-empty-files" )
+CSPLITARGS=$( (csplit --version 2>/dev/null | grep -i gnu >/dev/null) && echo "--elide-empty-files" || true )
 
 # We're going to need a `markdown` command to run comments through. This can
 # be [Gruber's `Markdown.pl`][md] (included in the shocco distribution) or
