@@ -375,6 +375,17 @@ HTML
 # results in the standard layout. All that's left to do now is put
 # everything back together.
 
+# Before starting the pipeline, decide the order in which to present the
+# files.  If `code0000` is empty, it should appear first so the remaining
+# files are presented `docs0000`, `code0001`, `docs0001`, and so on.  If
+# `code0000` is not empty, `docs0000` should appear first so the files
+# are presented `docs0000`, `code0000`, `docs0001`, `code0001` and so on.
+#
+# Ultimately, this means that if `code0000` is empty, the `-r` option
+# should not be provided with the final `-k` option group to `sort`(1) in
+# the pipeline below.
+[ "$(stat -c"%s" "code0000")" = 0 ] && sortopt="" || sortopt="r"
+
 # Start the pipeline with a simple list of split out temp filename. One file
 # per line.
 ls -1 docs[0-9]* code[0-9]* 2>/dev/null      |
@@ -390,7 +401,7 @@ ls -1 docs[0-9]* code[0-9]* 2>/dev/null      |
 #     code0002
 #     ...
 #
-sort -n -k1.5 -k1.1r                         |
+sort -n -k"1.5" -k"1.1$sortopt"              |
 
 # And if we pass those files to `cat(1)` in that order, it concatenates them
 # in exactly the way we need. `xargs(1)` reads from `stdin` and passes each
