@@ -343,7 +343,7 @@ layout () {
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-eqiv='content-type' content='text/html;charset=utf-8'>
+    <meta http-equiv='content-type' content='text/html;charset=utf-8'>
     <title>$1</title>
     <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
 </head>
