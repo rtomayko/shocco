@@ -384,7 +384,13 @@ HTML
 # Ultimately, this means that if `code0000` is empty, the `-r` option
 # should not be provided with the final `-k` option group to `sort`(1) in
 # the pipeline below.
-[ "$(stat -c"%s" "code0000")" = 0 ] && sortopt="" || sortopt="r"
+if stat -c"%s" /dev/null >/dev/null 2>/dev/null ; then
+    # GNU stat
+    [ "$(stat -c"%s" "code0000")" = 0 ] && sortopt="" || sortopt="r"
+else
+    # BSD stat
+    [ "$(stat -f"%z" "code0000")" = 0 ] && sortopt="" || sortopt="r"
+fi
 
 # Start the pipeline with a simple list of split out temp filename. One file
 # per line.
