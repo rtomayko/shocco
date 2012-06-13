@@ -344,6 +344,7 @@ layout () {
 <html>
 <head>
     <meta http-equiv='content-type' content='text/html;charset=utf-8'>
+    <meta name='generator' content='shocco, http://rtomayko.github.com/shocco/'>
     <title>$1</title>
     <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
 </head>
