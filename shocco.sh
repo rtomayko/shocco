@@ -266,7 +266,7 @@ sed '
 
 # The current stream text is suitable for input to `markdown(1)`. It takes
 # our doc text with embedded `DIVIDER`s and outputs HTML.
-$MARKDOWN                                    |
+$MARKDOWN /dev/stdin                         |
 
 # Now this where shit starts to get a little crazy. We use `csplit(1)` to
 # split the HTML into a bunch of individual files. The files are named
@@ -343,7 +343,8 @@ layout () {
 <!DOCTYPE html>
 <html>
 <head>
-    <meta http-eqiv='content-type' content='text/html;charset=utf-8'>
+    <meta http-equiv='content-type' content='text/html;charset=utf-8'>
+    <meta name='generator' content='shocco, http://rtomayko.github.com/shocco/'>
     <title>$1</title>
     <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
 </head>
