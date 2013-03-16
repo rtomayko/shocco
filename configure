@@ -192,8 +192,8 @@ else stdutil xdg-open   XDG_OPEN   xdg-open
      reconf BROWSER "${XDG_OPEN:-$FIREFOX}"
 fi
 
-stdutil ronn       RONN       ronn
-stdutil markdown   MARKDOWN   markdown Markdown.pl
+stdutil ronn       RONN       ronn $RONN
+stdutil markdown   MARKDOWN   markdown Markdown.pl $MARKDOWN
 stdutil perl       PERL       perl
 stdutil pygmentize PYGMENTIZE pygmentize $PYGMENTIZE
 
