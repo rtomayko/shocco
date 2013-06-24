@@ -350,22 +350,15 @@ layout () {
 <head>
     <meta http-equiv='content-type' content='text/html;charset=utf-8'>
     <title>$1</title>
-    <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
+    <link rel="stylesheet" media="all" href="http://jashkenas.github.io/docco/public/stylesheets/normalize.css" />
+      <link rel="stylesheet" media="all" href="http://jashkenas.github.io/docco/resources/linear/docco.css" />
 </head>
 <body>
-<div id=container>
-    <div id=background></div>
-    <table cellspacing=0 cellpadding=0>
-    <thead>
-      <tr>
-        <th class=docs><h1>$1</h1></th>
-        <th class=code></th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr><td class='docs'>$(cat)</td><td class='code'></td></tr>
-    </tbody>
-    </table>
+<div class="container">
+  <div class="page">
+        <div class="header"><h1>$1</h1></div>
+        $(cat)
+  </div>
 </div>
 </body>
 </html>
@@ -432,9 +425,9 @@ xargs cat                                    |
 # so that the CSS kicks in properly.
 {
     DOCSDIVIDER='<h5>DIVIDER</h5>'
-    DOCSREPLACE='</pre></div></td></tr><tr><td class=docs>'
+    DOCSREPLACE='</pre></div>'
     CODEDIVIDER='<span class="c"># DIVIDER</span>'
-    CODEREPLACE='</td><td class=code><div class=highlight><pre>'
+    CODEREPLACE='<div class="highlight"><pre>'
     sed "
         s@${DOCSDIVIDER}@${DOCSREPLACE}@
         s@${CODEDIVIDER}@${CODEREPLACE}@
