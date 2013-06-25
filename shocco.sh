@@ -25,10 +25,10 @@
 #
 # [do]: http://jashkenas.github.com/docco/
 # [sh]: https://github.com/rtomayko/shocco/blob/master/shocco.sh#commit
-
+# 
 # Usage and Prerequisites
 # -----------------------
-
+# 
 # The most important line in any shell program.
 set -e
 
@@ -47,7 +47,7 @@ set -e
 #/ The shocco program reads a shell script from <source> and writes
 #/ generated documentation in HTML format to stdout. When <source> is
 #/ '-' or not specified, shocco reads from stdin.
-
+# 
 # This is the second part of the usage message technique: `grep` yourself
 # for the usage message comment prefix and then cut off the first few
 # characters so that everything lines up.
@@ -107,7 +107,7 @@ command -v "$PYGMENTIZE" >/dev/null || {
 
 # Work and Cleanup
 # ----------------
-
+# 
 # Make sure we have a `TMPDIR` set. The `:=` parameter expansion assigns
 # the value if `TMPDIR` is unset or null.
 : ${TMPDIR:=/tmp}
@@ -145,7 +145,7 @@ trap "rm -rf $WORK" 0
 # make the code and doc formatting phases a bit easier. The result of this
 # pipeline is written to a temp file under the `$WORK` directory so we can
 # take a few passes over it.
-
+# 
 # Get a pipeline going with the `<source>` data. We write a single blank
 # line at the end of the file to make sure we have an equal number of code/comment
 # pairs.
@@ -238,7 +238,7 @@ cd "$WORK"
 
 # First Pass: Comment Formatting
 # ------------------------------
-
+# 
 # Start a pipeline going on our preformatted input.
 # Replace all CODE lines with entirely blank lines. We're not interested
 # in code right now, other than knowing where comments end and code begins
@@ -293,7 +293,7 @@ $MARKDOWN                                    |
 # This is exactly like the first pass but we're focusing on code instead of
 # comments. We use the same basic technique to separate the two and isolate
 # the code blocks.
-
+# 
 # Get another pipeline going on our performatted input file.
 # Replace DOCS lines with blank lines.
 sed 's/^DOCS.*//' < raw                     |
@@ -333,10 +333,10 @@ sed '
 
 # At this point, we have separate files for each docs section and separate
 # files for each code section.
-
+# 
 # HTML Template
 # -------------
-
+# 
 # Create a function for apply the standard [Docco][do] HTML layout, using
 # [jashkenas][ja]'s gorgeous CSS for styles. Wrapping the layout in a function
 # lets us apply it elsewhere simply by piping in a body.
@@ -367,12 +367,12 @@ HTML
 
 # Recombining
 # -----------
-
+# 
 # Alright, we have separate files for each docs section and separate
 # files for each code section. We've defined a function to wrap the
 # results in the standard layout. All that's left to do now is put
 # everything back together.
-
+# 
 # Before starting the pipeline, decide the order in which to present the
 # files.  If `code0000` is empty, it should appear first so the remaining
 # files are presented `docs0000`, `code0001`, `docs0001`, and so on.  If
@@ -458,7 +458,7 @@ layout "$title"
 # [do]: http://jashkenas.github.com/docco/
 # [kn]: http://www-cs-faculty.stanford.edu/~knuth/lp.html
 # [wi]: http://en.wikipedia.org/wiki/Literate_programming
-
+# 
 # Copyright (C) [Ryan Tomayko <tomayko.com/about>](http://tomayko.com/about)<br>
 # This is Free Software distributed under the MIT license.
 :
