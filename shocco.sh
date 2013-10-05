@@ -169,7 +169,7 @@ trap "rm -rf $WORK" 0
         # flip-flopping the two headings.
         lineno=$(( $lineno + 1 ))
         test $lineno = 1 && ! expr "$line" : "#!.*" >/dev/null &&
-        echo "$(basename $0): $(file):1 [warn] shebang! line missing." 1>&2
+        echo "$(basename $0): ${file}:1 [warn] shebang! line missing." 1>&2
 
         # Accumulate comment lines into `$docsbuf` and code lines into
         # `$codebuf`. Only lines matching `/#(?: |$)/` are considered doc
