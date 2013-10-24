@@ -23,7 +23,6 @@ sup:
 	echo "==========================================================="
 
 build: shocco
-	echo "shocco built at \`$(sourcedir)/shocco' ..."
 	echo "run \`make install' to install under $(bindir) ..."
 	echo "or, just copy the \`$(sourcedir)/shocco' file where you need it."
 
@@ -34,6 +33,7 @@ shocco: shocco.sh
 	< $< > shocco+
 	mv shocco+ $@
 	chmod 0755 $@
+	echo "shocco built at \`$(sourcedir)/shocco' ..."
 
 doc: shocco.html
 
