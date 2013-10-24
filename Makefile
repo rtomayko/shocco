@@ -46,8 +46,7 @@ install-markdown:
 	cp Markdown.pl "$(bindir)/markdown"
 	chmod 0755 "$(bindir)/markdown"
 
-install: $(INSTALL_PREREQUISITES)
-	test -f shocco
+install: shocco $(INSTALL_PREREQUISITES)
 	mkdir -p "$(bindir)"
 	cp shocco "$(bindir)/shocco"
 	chmod 0755 $(bindir)/shocco
