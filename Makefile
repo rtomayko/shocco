@@ -42,7 +42,6 @@ shocco.html: shocco shocco.sh
 	mv shocco.html+ $@
 
 install-markdown:
-	test -f shocco
 	mkdir -p "$(bindir)"
 	cp Markdown.pl "$(bindir)/markdown"
 	chmod 0755 "$(bindir)/markdown"
