@@ -28,18 +28,18 @@ build: shocco
 	echo "or, just copy the \`$(sourcedir)/shocco' file where you need it."
 
 shocco: shocco.sh
-	$(SHELL) -n shocco.sh
+	$(SHELL) -n $<
 	sed -e 's|@@MARKDOWN@@|$(MARKDOWN)|g' \
 	    -e 's|@@PYGMENTIZE@@|$(PYGMENTIZE)|g' \
-	< shocco.sh > shocco+
-	mv shocco+ shocco
-	chmod 0755 shocco
+	< $< > shocco+
+	mv shocco+ $@
+	chmod 0755 $@
 
 doc: shocco.html
 
-shocco.html: shocco
-	./shocco shocco.sh > shocco.html+
-	mv shocco.html+ shocco.html
+shocco.html: shocco shocco.sh
+	./$< $< shocco.sh > shocco.html+
+	mv shocco.html+ $@
 
 install-markdown:
 	test -f shocco
