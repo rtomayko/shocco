@@ -196,6 +196,7 @@ stdutil ronn       RONN       ronn $RONN
 stdutil markdown   MARKDOWN   markdown Markdown.pl $MARKDOWN
 stdutil perl       PERL       perl
 stdutil pygmentize PYGMENTIZE pygmentize $PYGMENTIZE
+stdutil rst2html   RST2HTML   rst2html rst2html.py
 
 set -e
 
@@ -219,6 +220,12 @@ test -z "$PYGMENTIZE" && {
     exit 3
 }
 
+test -z "$RST2HTML" && {
+    RST2HTML='(not found)'
+    warn "warn: no rst2html.py found on PATH; --rst option will not work."
+    warn "      see http://docutils.org/ for more information."
+}
+
 echo "okay, looks like you have everything we need. generating config files."
 
 
@@ -236,6 +243,7 @@ EOF
 cat <<MESSAGE
 configuration:
   markdown:      $MARKDOWN $INSTALL_MARKDOWN
+  rst2html:      $RST2HTML
   pygmentize:    $PYGMENTIZE
   bindir:        $bindir
   mandir:        $mandir
