@@ -164,19 +164,23 @@ trap "rm -rf $WORK" 0
     docsbuf=;docshead=
     while read -r line
     do
-        # Issue a warning if the first line of the script is not a shebang
-        # line. This can screw things up and wreck our attempt at
-        # flip-flopping the two headings.
         lineno=$(( $lineno + 1 ))
-        test $lineno = 1 && ! expr "$line" : "#!.*" >/dev/null &&
-        echo "$(basename $0): ${file}:1 [warn] shebang! line missing." 1>&2
 
         # Accumulate comment lines into `$docsbuf` and code lines into
         # `$codebuf`. Only lines matching `/#(?: |$)/` are considered doc
         # lines.
         if expr "$line" : '# ' >/dev/null || test "$line" = "#"
-        then docsbuf="$docsbuf$line
+        then
+            if test $lineno = 1
+            then
+                # If the first line of the script is a comment/doc
+                # line, we don't need to do any flip-flopping.
+                echo "$line"
+                exec cat
+            else
+                docsbuf="$docsbuf$line
 "
+            fi
         else codebuf="$codebuf$line
 "
         fi
