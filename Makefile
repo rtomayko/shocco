@@ -23,32 +23,30 @@ sup:
 	echo "==========================================================="
 
 build: shocco
-	echo "shocco built at \`$(sourcedir)/shocco' ..."
 	echo "run \`make install' to install under $(bindir) ..."
 	echo "or, just copy the \`$(sourcedir)/shocco' file where you need it."
 
 shocco: shocco.sh
-	$(SHELL) -n shocco.sh
+	$(SHELL) -n $<
 	sed -e 's|@@MARKDOWN@@|$(MARKDOWN)|g' \
 	    -e 's|@@PYGMENTIZE@@|$(PYGMENTIZE)|g' \
-	< shocco.sh > shocco+
-	mv shocco+ shocco
-	chmod 0755 shocco
+	< $< > shocco+
+	mv shocco+ $@
+	chmod 0755 $@
+	echo "shocco built at \`$(sourcedir)/shocco' ..."
 
 doc: shocco.html
 
-shocco.html: shocco
-	./shocco shocco.sh > shocco.html+
-	mv shocco.html+ shocco.html
+shocco.html: shocco shocco.sh
+	./$< $< shocco.sh > shocco.html+
+	mv shocco.html+ $@
 
 install-markdown:
-	test -f shocco
 	mkdir -p "$(bindir)"
 	cp Markdown.pl "$(bindir)/markdown"
 	chmod 0755 "$(bindir)/markdown"
 
-install: $(INSTALL_PREREQUISITES)
-	test -f shocco
+install: shocco $(INSTALL_PREREQUISITES)
 	mkdir -p "$(bindir)"
 	cp shocco "$(bindir)/shocco"
 	chmod 0755 $(bindir)/shocco
