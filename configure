@@ -205,11 +205,11 @@ test -z "$RONN" &&
     warn "warn: ronn is not installed. cannot rebuild manpages. no biggie."
 
 test -z "$MARKDOWN" && {
-     warn "warn: no markdown found on PATH. installing Gruber's with shocco."
-     INSTALL_MARKDOWN=" (will be installed)"
-     MARKDOWN="$bindir/markdown"
-     reconf MARKDOWN "$MARKDOWN"
-     INSTALL_PREREQUISITES=install-markdown
+    warn "warn: no markdown found on PATH. installing Gruber's with shocco."
+    INSTALL_MARKDOWN=" (will be installed)"
+    MARKDOWN="$bindir/markdown"
+    reconf MARKDOWN "$MARKDOWN"
+    INSTALL_PREREQUISITES=install-markdown
 }
 reconf INSTALL_PREREQUISITES "$INSTALL_PREREQUISITES"
 
