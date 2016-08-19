@@ -85,9 +85,9 @@ CSPLITARGS=$( (csplit --version 2>/dev/null | grep -i gnu >/dev/null) && echo "-
 # [ds]: http://www.pell.portland.or.us/~orc/Code/discount/
 command -v "$MARKDOWN" >/dev/null || {
     if command -v Markdown.pl >/dev/null
-    then alias markdown='Markdown.pl'
-    elif test -f "$(dirname $0)/Markdown.pl"
-    then alias markdown="perl $(dirname $0)/Markdown.pl"
+    then MARKDOWN='Markdown.pl'
+    elif test -f "$(dirname $(readlink $0))/Markdown.pl"
+    then MARKDOWN="$(dirname $(readlink $0))/Markdown.pl"
     else echo "$(basename $0): markdown command not found." 1>&2
          exit 1
     fi
@@ -321,7 +321,7 @@ sed '
 # file, this time with a `codeXXX` prefix. There should be the same number
 # of `codeXXX` files as there are `docsXXX` files.
 (
-    DIVIDER='/<span class="c"># DIVIDER</span>/'
+    DIVIDER='/<span class="c[1|a-zA-Z]*"># DIVIDER</span>/'
     csplit -sk                   \
            $CSPLITARGS           \
            -f code               \
@@ -433,7 +433,7 @@ xargs cat                                    |
 {
     DOCSDIVIDER='<h5>DIVIDER</h5>'
     DOCSREPLACE='</pre></div></td></tr><tr><td class=docs>'
-    CODEDIVIDER='<span class="c"># DIVIDER</span>'
+    CODEDIVIDER='<span class="c[1|a-zA-Z]*"># DIVIDER</span>'
     CODEREPLACE='</td><td class=code><div class=highlight><pre>'
     sed "
         s@${DOCSDIVIDER}@${DOCSREPLACE}@
