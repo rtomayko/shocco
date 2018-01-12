@@ -85,9 +85,11 @@ CSPLITARGS=$( (csplit --version 2>/dev/null | grep -i gnu >/dev/null) && echo "-
 # [ds]: http://www.pell.portland.or.us/~orc/Code/discount/
 command -v "$MARKDOWN" >/dev/null || {
     if command -v Markdown.pl >/dev/null
-    then alias markdown='Markdown.pl'
+    then MARKDOWN='Markdown.pl'
+    elif command -v pandoc >/dev/null
+    then MARKDOWN='pandoc -t html --smart'
     elif test -f "$(dirname $0)/Markdown.pl"
-    then alias markdown="perl $(dirname $0)/Markdown.pl"
+    then MARKDOWN="perl $(dirname $0)/Markdown.pl"
     else echo "$(basename $0): markdown command not found." 1>&2
          exit 1
     fi
@@ -263,8 +265,10 @@ cat -s                                       |
 #
 # Blank lines represent code segments. We want to replace all blank lines
 # with a dividing marker and remove the "DOCS" prefix from docs lines.
+# We also insert a blank line before the dividing marker to make markdown
+# parsers (at least pandoc) recognize them as headings. 
 sed '
-    s/^$/##### DIVIDER/
+    s/^$/\n##### DIVIDER/
     s/^DOCS //'                              |
 
 # The current stream text is suitable for input to `markdown(1)`. It takes
@@ -281,7 +285,7 @@ $MARKDOWN                                    |
            $CSPLITARGS                       \
            -f docs                           \
            -n 4                              \
-           - '/<h5>DIVIDER<\/h5>/' '{9999}'  \
+           - '/<h5\([^>]\+\)\?>DIVIDER<\/h5>/' '{9999}'  \
            2>/dev/null                      ||
     true
 )
@@ -431,7 +435,7 @@ xargs cat                                    |
 # rows and cells. This also wraps each code block in a `<div class=highlight>`
 # so that the CSS kicks in properly.
 {
-    DOCSDIVIDER='<h5>DIVIDER</h5>'
+    DOCSDIVIDER='<h5\([^>]\+\)\?>DIVIDER</h5>'
     DOCSREPLACE='</pre></div></td></tr><tr><td class=docs>'
     CODEDIVIDER='<span class="c"># DIVIDER</span>'
     CODEREPLACE='</td><td class=code><div class=highlight><pre>'
