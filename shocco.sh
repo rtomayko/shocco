@@ -41,37 +41,62 @@ set -e
 # padded with a space are considered documentation. A `#` followed by any
 # other character is considered code.
 #
-#/ Usage: shocco [-t <title>] [<source>]
+#/ Usage: shocco [<options>] [<source>]
 #/ Create literate-programming-style documentation for shell scripts.
 #/
 #/ The shocco program reads a shell script from <source> and writes
 #/ generated documentation in HTML format to stdout. When <source> is
 #/ '-' or not specified, shocco reads from stdin.
+#/
+#/ Options:
+#/   -t,--title <title>  Specify a custom title (defaults to filename)
+#/   -r,--rst            Treat comments as reStructuredText not Markdown
+#/   -h,--help           Show this usage text
 
 # This is the second part of the usage message technique: `grep` yourself
 # for the usage message comment prefix and then cut off the first few
 # characters so that everything lines up.
-expr -- "$*" : ".*--help" >/dev/null && {
+usage () {
     grep '^#/' <"$0" | cut -c4-
-    exit 0
 }
 
-# A custom title may be specified with the `-t` option. We use the filename
-# as the title if none is given.
-test "$1" = '-t' && {
-    title="$2"
-    shift;shift
-}
+# These are replaced with the full paths to real utilities by the
+# configure/make system.
+PYGMENTIZE='@@PYGMENTIZE@@'
+MARKDOWN='@@MARKDOWN@@'
+RST2HTML='@@RST2HTML@@'
+
+processor="$MARKDOWN"
+
+while test $# -gt 0
+do
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0 ;;
+        -t|--title)
+            title="$2"
+            shift; shift ;;
+        -r|--rst)
+            processor="$RST2HTML"
+            shift ;;
+        *)
+            break ;;
+    esac
+done
+
+if test $# -gt 1
+then
+    echo "$(basename $0): cannot specify multiple input files" 1>&2
+    echo 1>&2
+    usage 1>&2
+    exit 1
+fi
 
 # Next argument should be the `<source>` file. Grab it, and use its basename
 # as the title if none was given with the `-t` option.
 file="$1"
 : ${title:=$(basename "$file")}
-
-# These are replaced with the full paths to real utilities by the
-# configure/make system.
-MARKDOWN='@@MARKDOWN@@'
-PYGMENTIZE='@@PYGMENTIZE@@'
 
 # On GNU systems, csplit doesn't elide empty files by default:
 CSPLITARGS=$( (csplit --version 2>/dev/null | grep -i gnu >/dev/null) && echo "--elide-empty-files" || true )
@@ -263,13 +288,17 @@ cat -s                                       |
 #
 # Blank lines represent code segments. We want to replace all blank lines
 # with a dividing marker and remove the "DOCS" prefix from docs lines.
-sed '
-    s/^$/##### DIVIDER/
-    s/^DOCS //'                              |
+sed 's/^$/DOCS \
+**DIVIDER**\
+DOCS /'                                      |
+sed 's/^DOCS //'                             |
+
+# Save a copy in case we need to debug issues with $processor
+tee "$WORK/input"                            |
 
 # The current stream text is suitable for input to `markdown(1)`. It takes
 # our doc text with embedded `DIVIDER`s and outputs HTML.
-$MARKDOWN                                    |
+$processor                                   |
 
 # Now this where shit starts to get a little crazy. We use `csplit(1)` to
 # split the HTML into a bunch of individual files. The files are named
@@ -281,7 +310,7 @@ $MARKDOWN                                    |
            $CSPLITARGS                       \
            -f docs                           \
            -n 4                              \
-           - '/<h5>DIVIDER<\/h5>/' '{9999}'  \
+           - '/<strong>DIVIDER<\/strong>/' '{9999}'  \
            2>/dev/null                      ||
     true
 )
@@ -431,7 +460,7 @@ xargs cat                                    |
 # rows and cells. This also wraps each code block in a `<div class=highlight>`
 # so that the CSS kicks in properly.
 {
-    DOCSDIVIDER='<h5>DIVIDER</h5>'
+    DOCSDIVIDER='<p><strong>DIVIDER</strong></p>'
     DOCSREPLACE='</pre></div></td></tr><tr><td class=docs>'
     CODEDIVIDER='<span class="c"># DIVIDER</span>'
     CODEREPLACE='</td><td class=code><div class=highlight><pre>'
