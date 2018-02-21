@@ -350,7 +350,7 @@ layout () {
 <head>
     <meta http-equiv='content-type' content='text/html;charset=utf-8'>
     <title>$1</title>
-    <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/docco.css">
+    <link rel=stylesheet href="http://jashkenas.github.com/docco/resources/linear/docco.css">
 </head>
 <body>
 <div id=container>
